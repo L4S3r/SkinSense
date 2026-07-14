@@ -431,6 +431,14 @@ a:focus-visible {
   color: var(--text-faint);
 }
 
+/* ---------------- Booth display mode ---------------- */
+/* Opened as ?display on the big screen: no controls, larger idle prompt. */
+.display-mode .controls { display: none; }
+.display-mode .viewfinder-status {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
 /* ---------------- Reduced motion ---------------- */
 @media (prefers-reduced-motion: reduce) {
   .scan-line { animation: none; top: 50%; opacity: 0.8; }

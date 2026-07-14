@@ -164,9 +164,94 @@ function showError(message) {
   retryBtn.hidden = true;
 }
 
-// ------------------- Events -------------------
-captureBtn.addEventListener("click", captureAndAnalyze);
-retryBtn.addEventListener("click", startCamera);
-errorRetryBtn.addEventListener("click", startCamera);
+// ------------------- Booth display mode -------------------
+// When opened as `?display`, this screen doesn't capture anything itself.
+// It connects to the backend over a WebSocket and renders reports pushed
+// from the Flutter phone app — the big screen the crowd watches.
+const IS_DISPLAY = new URLSearchParams(location.search).has("display");
 
-startCamera();
+function enterDisplayMode() {
+  // No local camera on the booth screen — stop it and reshape the UI.
+  stopCamera();
+  video.hidden = true;
+  frozenFrame.hidden = true;
+  scanLine.hidden = true;
+  captureBtn.hidden = true;
+  retryBtn.hidden = true;
+  hint.hidden = true;
+  reportPanel.hidden = true;
+  errorPanel.hidden = true;
+  document.body.classList.add("display-mode");
+  showIdle("Connecting to scanner…");
+  connectDisplaySocket();
+}
+
+function showIdle(message) {
+  reportPanel.hidden = true;
+  frozenFrame.hidden = true;
+  scanLine.hidden = true;
+  viewfinderStatus.hidden = false;
+  viewfinderStatus.textContent = message;
+}
+
+function connectDisplaySocket() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws/display`);
+
+  ws.addEventListener("open", () => showIdle("Ready — waiting for the next scan…"));
+
+  ws.addEventListener("message", (event) => {
+    let msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (msg.type === "hello") {
+      showIdle("Ready — waiting for the next scan…");
+    } else if (msg.type === "report") {
+      showDisplayReport(msg.report, msg.image);
+    }
+  });
+
+  // Auto-reconnect so the booth screen survives a server restart / Wi-Fi blip.
+  ws.addEventListener("close", () => {
+    showIdle("Reconnecting…");
+    setTimeout(connectDisplaySocket, 2000);
+  });
+  ws.addEventListener("error", () => ws.close());
+}
+
+let idleTimer = null;
+function showDisplayReport(report, image) {
+  clearTimeout(idleTimer);
+  viewfinderStatus.hidden = true;
+
+  // Show the captured photo in the viewfinder frame with a scan sweep,
+  // then render the report using the shared renderer.
+  if (image) {
+    frozenFrame.src = image;
+    frozenFrame.hidden = false;
+    video.hidden = true;
+  }
+  scanLine.hidden = false;
+  setTimeout(() => {
+    scanLine.hidden = true;
+    renderReport(report);
+    captureBtn.hidden = true; // renderReport unhides some controls; keep them off
+    retryBtn.hidden = true;
+  }, 1600);
+
+  // Return to the idle "waiting" state so the booth is ready for the next person.
+  idleTimer = setTimeout(() => showIdle("Ready — waiting for the next scan…"), 30000);
+}
+
+// ------------------- Events / boot -------------------
+if (IS_DISPLAY) {
+  enterDisplayMode();
+} else {
+  captureBtn.addEventListener("click", captureAndAnalyze);
+  retryBtn.addEventListener("click", startCamera);
+  errorRetryBtn.addEventListener("click", startCamera);
+  startCamera();
+}
