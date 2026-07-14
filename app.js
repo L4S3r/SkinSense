@@ -1,4 +1,4 @@
-﻿// ── STATE
+// ── STATE
 var photoBase64=null, photoMimeType='image/jpeg', analysisOption='all';
 var quizAnswers={}, photoResult=null, quizResult=null;
 var stream=null, facingMode='user', countdownTimer=null, cdActive=false;
@@ -239,18 +239,28 @@ function setLoaderStep(n){
   }
 }
 
-// ── GLM-4V API CALL
+// ── NVIDIA API CALL
 async function callGLM(payload){
   var apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey) throw new Error('Please enter your Zhipu AI API key.');
-  var res=await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions',{
+  var modelName=(document.getElementById('modelName').value||'zhipuai/glm-4v-9b').trim();
+  if(!apiKey) throw new Error('Please enter your NVIDIA API key (starts with nvapi-).');
+
+  var body=Object.assign({model:modelName, max_tokens:1500, temperature:0.3}, payload);
+
+  var res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-    body:JSON.stringify(Object.assign({model:'glm-4v-flash',max_tokens:1500,temperature:0.3}, payload))
+    body:JSON.stringify(body)
   });
+
   if(!res.ok){
     var err=await res.json().catch(function(){return{};});
-    throw new Error((err&&err.error&&err.error.message)||'API error '+res.status);
+    var msg=(err&&err.detail)||(err&&err.error&&err.error.message)||('NVIDIA API error '+res.status);
+    // Common error hints
+    if(res.status===401) msg='Invalid API key. Make sure you copied the full key from build.nvidia.com.';
+    if(res.status===402||res.status===429) msg='Free tier limit reached. Try again later or upgrade at build.nvidia.com.';
+    if(res.status===404) msg='Model "'+modelName+'" not found. Check the model name at build.nvidia.com/explore/vision.';
+    throw new Error(msg);
   }
   var data=await res.json();
   return (data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'';

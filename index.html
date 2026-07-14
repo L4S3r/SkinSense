@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SkinSense AI - Skin Type Analyzer</title>
-  <meta name="description" content="Discover your skin type using AI-powered live camera analysis. Powered by GLM-4V." />
+  <title>SkinSense AI — Skin Type Analyzer</title>
+  <meta name="description" content="Discover your skin type using AI-powered live camera analysis. Powered by GLM via NVIDIA API." />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,18 +12,25 @@
 <div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
 <div class="app">
   <header>
-    <div class="logo-pill"><span class="dot"></span>Powered by GLM-4V &middot; Zhipu AI</div>
+    <div class="logo-pill"><span class="dot"></span>GLM Vision &middot; NVIDIA Free API</div>
     <h1>Know Your Skin.<br/>Know Yourself.</h1>
     <p class="subtitle">Point your camera at your face &mdash; our AI analyzes your skin live and combines it with a questionnaire for personalized results.</p>
   </header>
   <div class="card">
     <div style="margin-bottom:14px">
-      <div class="section-title">🔑 GLM-4V API Key</div>
-      <div class="section-sub">Enter your <a href="https://open.bigmodel.cn/" target="_blank">Zhipu AI</a> API key. Stays in your browser only.</div>
+      <div class="section-title">🔑 NVIDIA API Key</div>
+      <div class="section-sub">Get your free key at <a href="https://build.nvidia.com" target="_blank">build.nvidia.com</a> &rarr; any model &rarr; "Get API Key". Stays in your browser only.</div>
     </div>
-    <div class="api-section">
-      <label for="apiKey">API Key</label>
-      <input type="password" id="apiKey" class="input-field" placeholder="Your Zhipu AI API key..." autocomplete="off" />
+    <div class="api-section" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label for="apiKey" style="font-size:13px;color:var(--muted);white-space:nowrap;min-width:70px">API Key</label>
+        <input type="password" id="apiKey" class="input-field" placeholder="nvapi-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label for="modelName" style="font-size:13px;color:var(--muted);white-space:nowrap;min-width:70px">Model</label>
+        <input type="text" id="modelName" class="input-field" value="zhipuai/glm-4v-9b" placeholder="e.g. zhipuai/glm-4.5v" autocomplete="off" />
+      </div>
+      <div style="font-size:12px;color:var(--muted);padding:0 4px">&#x26A0;&#xFE0F; Tip: Find your exact model name on <a href="https://build.nvidia.com/explore/vision" target="_blank" style="color:var(--accent)">build.nvidia.com/explore/vision</a>. Common GLM models: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px">zhipuai/glm-4v-9b</code> &nbsp; <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px">zhipuai/glm-4.5v</code></div>
     </div>
   </div>
   <div class="steps">
@@ -144,7 +151,7 @@
       <button class="btn-outline" onclick="resetAll()">&#x21BA; Start Over</button>
     </div>
   </div>
-  <footer><p>SkinSense AI &middot; Not medical advice &middot; <a href="https://open.bigmodel.cn/" target="_blank">Zhipu GLM-4V</a></p></footer>
+  <footer><p>SkinSense AI &middot; Not medical advice &middot; <a href="https://build.nvidia.com/explore/vision" target="_blank">NVIDIA Free API &mdash; GLM Vision</a></p></footer>
 </div>
 <script src="app.js"></script>
 </body>
