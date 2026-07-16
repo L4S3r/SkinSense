@@ -107,7 +107,21 @@ class SimpleBlockchain:
         self.create_block(proof, self.hash_block(prev), data)
         print(f"\nSUCCESS: {name} enrolled → Block #{len(self.chain)}")
 
-    def recognize(self, unknown_embedding, threshold=0.65):
+    @staticmethod
+    def cosine_distance(a, b):
+        # Facenet embeddings aren't unit-length, and raw Euclidean distance
+        # between them runs in the ~5-15 range — so the old 0.65 L2 threshold
+        # rejected almost everyone. Cosine distance is scale-invariant and
+        # lands in a stable 0..2 range, which is what the threshold expects.
+        a = np.asarray(a, dtype=float)
+        b = np.asarray(b, dtype=float)
+        denom = np.linalg.norm(a) * np.linalg.norm(b)
+        if denom == 0:
+            return 1.0
+        return 1.0 - float(np.dot(a, b) / denom)
+
+    def recognize(self, unknown_embedding, threshold=0.40):
+        # threshold=0.40 is DeepFace's tuned cutoff for Facenet + cosine.
         print("\nChecking against enrolled faces...")
         best_name = "Unknown"
         best_distance = 999
@@ -115,7 +129,7 @@ class SimpleBlockchain:
         for block in self.chain[1:]:
             if 'embedding' in block['data']:
                 known = np.array(block['data']['embedding'])
-                distance = np.linalg.norm(known - unknown_embedding)
+                distance = self.cosine_distance(known, unknown_embedding)
                 name = block['data']['name']
                 print(f"   → vs {name:12} → distance = {distance:.4f}")
 
@@ -128,6 +142,25 @@ class SimpleBlockchain:
             return best_name, best_distance
         else:
             return "Unknown", best_distance
+
+    def is_chain_valid(self):
+        # Re-verify the chain end-to-end: every block must point at the real
+        # hash of its predecessor, and every proof-of-work must still solve.
+        # Without this the "blockchain" never actually checks its own integrity.
+        for i in range(1, len(self.chain)):
+            current = self.chain[i]
+            previous = self.chain[i - 1]
+
+            if current['previous_hash'] != self.hash_block(previous):
+                print(f"   ✗ Block #{current['index']}: broken link to previous block")
+                return False
+
+            guess = str(current['proof']**2 - previous['proof']**2).encode()
+            if hashlib.sha256(guess).hexdigest()[:4] != '0000':
+                print(f"   ✗ Block #{current['index']}: invalid proof-of-work")
+                return False
+
+        return True
 
 # ------------------- Start System -------------------
 print("Face Recognition + Blockchain System READY!")
@@ -157,8 +190,13 @@ while True:
         try:
             embedding = DeepFace.represent(img_path, model_name="Facenet", enforce_detection=True)[0]["embedding"]
             blockchain.add_face(name, np.array(embedding))
-        except:
+        except ValueError:
+            # DeepFace raises ValueError when enforce_detection finds no face.
             print("No face detected! Try again with better lighting.")
+        except Exception as e:
+            # Anything else (import/model/IO error) shouldn't masquerade as
+            # "no face" — show it so it's actually debuggable.
+            print(f"Enrollment failed: {type(e).__name__}: {e}")
 
     elif choice == "2":
         print("\nLook at camera → Click 'Capture Photo'")
@@ -176,14 +214,19 @@ while True:
                 print(f"\nRECOGNIZED: {name} (distance = {dist:.4f})")
             else:
                 print(f"\nNot recognized → Unknown person (distance = {dist:.4f})")
-        except:
+        except ValueError:
+            # DeepFace raises ValueError when enforce_detection finds no face.
             print("No face detected in photo!")
+        except Exception as e:
+            print(f"Recognition failed: {type(e).__name__}: {e}")
 
     elif choice == "3":
         print("\nFinal Blockchain:")
         for b in blockchain.chain:
             n = b['data'].get('name', 'Genesis Block')
             print(f"Block {b['index']} → {n}")
+        print("\nVerifying chain integrity...")
+        print("Chain valid ✓" if blockchain.is_chain_valid() else "Chain INVALID ✗")
         print("\nThank you! System closed.")
         break
     else:
