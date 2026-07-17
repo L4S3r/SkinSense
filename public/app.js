@@ -1,5 +1,5 @@
 // =====================================================
-// Lumen — camera capture + report rendering
+// Meloniq — camera capture + report rendering
 // =====================================================
 
 const video = document.getElementById("video");
