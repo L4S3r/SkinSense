@@ -52,6 +52,7 @@ function stopCamera() {
 
 function resetToScanState() {
   document.body.removeAttribute("data-skin-type");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
   reportPanel.hidden = true;
   errorPanel.hidden = true;
   retryBtn.hidden = true;
@@ -118,6 +119,10 @@ async function captureAndAnalyze() {
 // ------------------- Rendering -------------------
 function renderReport(report) {
   document.body.dataset.skinType = report.skin_type || "unclear";
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
+  if (report.skin_type && ["oily", "dry", "combination", "sensitive"].includes(report.skin_type)) {
+    document.body.classList.add(`bg-${report.skin_type}`);
+  }
   captureBtn.hidden = true;
   retryBtn.hidden = false;
   errorPanel.hidden = true;
@@ -190,6 +195,7 @@ function enterDisplayMode() {
 
 function showIdle(message) {
   document.body.removeAttribute("data-skin-type");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
   reportPanel.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;
