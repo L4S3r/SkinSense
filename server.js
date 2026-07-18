@@ -39,7 +39,7 @@ const MODEL = process.env.SKIN_ANALYSIS_MODEL || "gemini-3.5-flash";
 // ------------------- App setup -------------------
 const app = express();
 app.use(express.json({ limit: "15mb" })); // photos as base64 need headroom
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "dist")));
 
 // ------------------- Booth display channel -------------------
 // The Flutter phone captures a photo and POSTs it here; the booth SCREEN is a

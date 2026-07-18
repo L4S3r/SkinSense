@@ -52,8 +52,10 @@ recognition** in the app — it's a single-shot cosmetic skin analysis.
 
 ```
 Face-skin/
-├── server.js               # Express server + Gemini call + WebSocket channel
-├── package.json            # deps: express, openai (Gemini-compat), ws, dotenv
+├── server.js               # Express server + Gemini call + WebSocket channel (serves dist/)
+├── package.json            # deps: express, openai (Gemini-compat), ws, react, react-dom, vite, etc.
+├── vite.config.js          # Vite config with React plugin and proxy settings
+├── index.html              # Vite HTML entrypoint template
 ├── .env.example            # committed template — copy to .env
 ├── .env                    # your real GEMINI_API_KEY (gitignored)
 ├── .gitignore
@@ -61,10 +63,11 @@ Face-skin/
 ├── FaceChain.py            # original Colab notebook (ancestor, not run by app)
 ├── README.md               # setup + booth docs
 ├── WALKTHROUGH.md          # this file
-├── public/                 # the web frontend (served as static files)
-│   ├── index.html          # camera viewfinder + report UI
-│   ├── style.css           # dark "biometric scan" theme (+ display mode)
-│   └── app.js              # capture + fetch('/api/analyze') + WS display mode
+├── src/                    # React frontend source files
+│   ├── main.jsx            # React app mount script
+│   ├── App.jsx             # Camera capture, report rendering, display mode UI
+│   └── App.css             # Skincare brand style definitions & animations
+├── public_vanilla/         # Backup of old vanilla JS/CSS assets
 └── mobile/                 # Flutter capture app (booth phone station)
     ├── lib/main.dart       # front-camera capture → POST to backend
     └── android/…/AndroidManifest.xml  # camera + internet + cleartext perms
@@ -86,12 +89,12 @@ server still boots but warns, and `/api/analyze` returns a clear 500.
 Gemini exposes an **OpenAI-compatible endpoint**, so the code reuses the
 `openai` SDK and just points `baseURL` at
 `https://generativelanguage.googleapis.com/v1beta/openai/`. The model defaults
-to `gemini-2.5-flash` (override with `SKIN_ANALYSIS_MODEL`).
+to `gemini-3.5-flash` (override with `SKIN_ANALYSIS_MODEL`).
 
 ### App setup (lines ~37–40)
 - `express.json({ limit: "15mb" })` — base64 photos are large, so the body
   limit is raised.
-- `express.static("public")` — serves the web frontend.
+- `express.static("dist")` — serves the pre-compiled React frontend (production bundle).
 
 ### The booth display channel (lines ~42–75)
 This is what makes two-device booth mode work. The phone POSTs a photo, but the
@@ -136,48 +139,38 @@ startup log prints both the booth-screen URL and the phone POST target.
 | Env var | Default | Purpose |
 |---|---|---|
 | `GEMINI_API_KEY` | _(none)_ | Google Gemini API key. Required. |
-| `SKIN_ANALYSIS_MODEL` | `gemini-2.5-flash` | Vision model used for analysis |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | Vision model used for analysis |
 | `PORT` | `3000` | Server port |
 
 ---
 
-## 5. The web frontend — `public/`
+## 5. The web frontend — React Source (`src/`)
 
-### `index.html`
-Three stacked panels inside `<main class="stage">`:
-- **Scan panel** — `<video>` viewfinder with a face-guide ellipse, corner
-  brackets, an animated scan line, and the Capture / Scan-again buttons.
-- **Report panel** (hidden until results arrive) — skin-type heading,
-  confidence badge, summary, observations grid, care-notes list, caveats.
-- **Error panel** (hidden by default) — message + Try-again button.
+### `index.html` (in root)
+Vite's HTML entrypoint template containing:
+- Preconnect settings and external fonts loader (`Playfair Display`, `DM Sans`).
+- The root `<div id="root">` element where React mounts the application.
 
-### `app.js` — two modes in one file
+### `src/main.jsx`
+The React application mount script. It imports React, ReactDOM, `App.jsx`, and `App.css`, then attaches the main `<App />` component to the DOM.
+
+### `src/App.jsx` — two modes in a single component
+Manages frontend reactive states (`isDisplay`, `stream`, `isScanning`, `report`, `error`, etc.).
+
 **Self-serve mode** (default):
-1. `startCamera()` → `getUserMedia({ video: { facingMode: "user" } })`, shows
-   the preview, enables Capture.
-2. `captureAndAnalyze()` draws the current frame to a `<canvas>` (mirrored),
-   exports a JPEG data URL, freezes the viewfinder, runs the scan animation,
-   `POST`s `{ image }` to `/api/analyze`, then `renderReport()` on success.
-3. `renderReport()` populates the report from the JSON, using `textContent`
-   (not `innerHTML`) so model output is inserted as text, never HTML.
+1. **Camera Initialization**: Runs `startCamera()` on mount via `useEffect` hook to fetch `navigator.mediaDevices.getUserMedia` video stream and feed it to the mirrored `<video>` preview.
+2. **Frame Capture & Send**: `captureAndAnalyze()` draws the current video frame into a hidden `<canvas>`, extracts a JPEG data URL, stops the camera track, shows the scanning animation overlay, and fires a POST request to `/api/analyze`.
+3. **Report Render**: On a successful response, triggers a `morphActive` shimmer transition and mounts the report panel details, updating body color themes based on the skin type (`bg-oily`, `bg-dry`, etc.). React state bindings safely prevent HTML injection.
 
 **Booth display mode** (`?display` in the URL):
-1. `enterDisplayMode()` stops/hides the local camera and controls and shows an
-   idle "waiting for the next scan…" state.
-2. `connectDisplaySocket()` opens a WebSocket to `/ws/display` and
-   auto-reconnects on close (survives a server restart or Wi-Fi blip).
-3. On a `{ type: "report" }` push, `showDisplayReport()` shows the captured
-   photo in the viewfinder frame, runs the scan sweep, renders the report with
-   the shared `renderReport()`, then returns to idle after 30s — ready for the
-   next person.
+1. **WS Client**: Detects query params and initializes WebSocket connection to `/ws/display`. Automatically restarts the connection upon closures or server blips.
+2. **Display Render**: Listens to `{ type: "report" }` broadcasts. When a report is received, it loads the base64 captured photo into the viewfinder, plays a 1.6-second scanning line sweep animation, triggers morph shimmer effects, and renders the skin type report details.
 
-The self-serve flow is untouched when the page is opened without `?display`.
-
-### `style.css`
-A design-token-driven dark theme: charcoal background, coral (skin/warmth) and
-teal (digital scan) accents, a faint biometric grid backdrop, the scan-line
-animation, a `.display-mode` block (hides controls, enlarges the idle prompt),
-and a `prefers-reduced-motion` block that disables animations.
+### `src/App.css`
+A design-token-driven skincare brand styling stylesheet defining:
+- Dynamic CSS color variables (`--bg`, `--coral`, etc.) overridden when body attributes match skin-type scan results (`data-skin-type="oily"`, `"dry"`...).
+- Biometric grids, sweep animations, morph shimmers, and SVG path drawing keyframes for the clay-cracks effect.
+- Media queries to handle viewport responsiveness and user-controlled accessibility tags (`prefers-reduced-motion`).
 
 ---
 

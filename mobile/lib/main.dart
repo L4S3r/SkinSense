@@ -316,20 +316,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Widget _buildFaceGuide() {
-    return IgnorePointer(
-      child: Center(
-        child: FractionallySizedBox(
-          widthFactor: 0.6,
-          heightFactor: 0.7,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: _teal.withValues(alpha: 0.5), width: 1.4),
-              borderRadius: BorderRadius.circular(140),
-            ),
-          ),
-        ),
-      ),
-    );
+    return _PulsingFaceGuide(isSending: _state == SendState.sending);
   }
 
   Widget _buildControls() {
@@ -399,6 +386,96 @@ class _CameraSwitchButton extends StatelessWidget {
         icon: const Icon(Icons.cameraswitch, color: _text),
         iconSize: 26,
         padding: const EdgeInsets.all(12),
+      ),
+    );
+  }
+}
+
+/// Pulsing camera alignment guide with high-fidelity upload feedback.
+class _PulsingFaceGuide extends StatefulWidget {
+  const _PulsingFaceGuide({required this.isSending});
+  final bool isSending;
+
+  @override
+  State<_PulsingFaceGuide> createState() => _PulsingFaceGuideState();
+}
+
+class _PulsingFaceGuideState extends State<_PulsingFaceGuide>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    if (widget.isSending) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _PulsingFaceGuide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSending != oldWidget.isSending) {
+      if (widget.isSending) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.animateTo(1.0, duration: const Duration(milliseconds: 300));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            final double value = _animation.value;
+            final double glowAlpha = widget.isSending ? value * 0.4 : 0.15;
+            final double borderAlpha = widget.isSending ? value : 0.5;
+            final double borderWidth = widget.isSending ? 2.2 : 1.4;
+
+            return FractionallySizedBox(
+              widthFactor: 0.6,
+              heightFactor: 0.7,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _teal.withValues(alpha: borderAlpha),
+                    width: borderWidth,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: glowAlpha),
+                      blurRadius: widget.isSending ? 20.0 * value : 8.0,
+                      spreadRadius: widget.isSending ? 3.0 * value : 0.0,
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(140),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -47,18 +47,40 @@ skin concerns to a dermatologist.
 
 ## Setup
 
-```bash
-npm install
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-# Add your key
-cp .env.example .env
-# then open .env and set GEMINI_API_KEY to your real key
+2. **Configure API Key**:
+   ```bash
+   cp .env.example .env
+   # Open .env and set GEMINI_API_KEY to your Gemini API key
+   ```
 
-npm start
-```
+3. **Run the App**:
 
-Open **http://localhost:3000**, allow camera access, and click **Capture &
-analyze**.
+   - **Development Mode (Hot-Reloading)**:
+     Start both the Express backend and the Vite dev server.
+     ```bash
+     # In terminal 1: starts backend Express server on port 3000
+     npm start
+
+     # In terminal 2: starts Vite dev server on port 5173
+     npm run dev
+     ```
+     Now open **http://localhost:5173** in your browser, allow camera access, and click **Capture & analyze**.
+
+   - **Production Mode (Pre-compiled)**:
+     Compile the React application first, then start the Express server.
+     ```bash
+     # Compile the React app (outputs to dist/)
+     npm run build
+
+     # Start the Express server (serves compiled files from dist/ on port 3000)
+     npm start
+     ```
+     Open **http://localhost:3000** in your browser.
 
 The key is read from the `GEMINI_API_KEY` variable in `.env` (loaded by
 `dotenv`). `.env` is gitignored, so a real key never lands in version control —
@@ -158,18 +180,21 @@ with `-Serve` to also start the server. Re-run it if the connection drops.
 
 ```
 Face-skin/
-├── server.js               # Express + Gemini call + WebSocket display channel
-├── package.json            # deps: express, openai, ws, dotenv
+├── server.js               # Express + Gemini call + WebSocket display channel (serves dist/)
+├── package.json            # deps: express, openai, ws, react, react-dom, vite, etc.
+├── vite.config.js          # Vite config with React plugin and proxy settings
+├── index.html              # Vite HTML entrypoint template
 ├── .env.example            # committed template — copy to .env
 ├── .env                    # your real key (gitignored)
 ├── booth-connect.ps1       # adb-reverse helper for the browser fallback
 ├── FaceChain.py            # original Colab notebook (ancestor, not run by app)
 ├── README.md               # this file
 ├── WALKTHROUGH.md          # full guided tour of the codebase
-├── public/                 # the web frontend (served as static files)
-│   ├── index.html          # camera viewfinder + report UI
-│   ├── style.css           # dark "biometric scan" theme (+ display mode)
-│   └── app.js              # capture + fetch('/api/analyze') + WS display mode
+├── src/                    # React frontend source files
+│   ├── main.jsx            # React app mount script
+│   ├── App.jsx             # Camera capture, report rendering, display mode UI
+│   └── App.css             # Skincare brand style definitions & animations
+├── public_vanilla/         # Backup of old vanilla JS/CSS assets (index.html, app.js, style.css)
 └── mobile/                 # Flutter capture app (booth phone station)
     └── lib/main.dart        # front-camera capture → POST to backend
 ```

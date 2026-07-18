@@ -46,9 +46,14 @@ that way.
 
 ```
 server.js                 # Express + Gemini + WebSocket (/ws/display). ES modules.
-public/                   # web frontend (static)
-  index.html  style.css   # style.css has a "display mode" block for the booth screen
-  app.js                  # camera capture; ?display flips it to WS-listening screen mode
+src/                      # React frontend
+  main.jsx                # React app entrypoint
+  App.jsx                 # Core app component (web webcam + display mode via WS)
+  App.css                 # Custom Skincare brand design tokens, styles, and animations
+index.html                # Root HTML template for Vite
+vite.config.js            # Vite configurations with server proxies
+public_vanilla/           # Backup folder containing vanilla JS/CSS assets
+dist/                     # Vite production build output (served by server.js, gitignored)
 mobile/                   # Flutter capture app (Android)
   lib/main.dart           # single screen: front/rear camera → POST /api/analyze
 .env.example              # copy to .env, set GEMINI_API_KEY
@@ -64,7 +69,7 @@ booth-connect.ps1         # adb reverse helper for the browser-fallback booth pa
   - On success returns `{ report }` AND broadcasts
     `{ type: "report", report, image }` to every `?display` screen.
 - `WS /ws/display` — on connect sends `{ type: "hello" }`, then `report`
-  messages. The web `app.js` display mode auto-reconnects.
+  messages. The React app display mode auto-reconnects.
 - Report JSON shape: `skin_type, confidence, summary, observations[], care_tips[], caveats`.
   No clear face → `skin_type: "unclear"` (don't make the model guess).
 
@@ -73,7 +78,7 @@ booth-connect.ps1         # adb reverse helper for the browser-fallback booth pa
 | var | default | note |
 |---|---|---|
 | `GEMINI_API_KEY` | — | required |
-| `SKIN_ANALYSIS_MODEL` | `gemini-2.5-flash` | also: `-flash-lite`, `-pro` |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | also: `-flash-lite`, `-pro` |
 | `PORT` | `3000` | |
 
 ## Commands
@@ -81,7 +86,9 @@ booth-connect.ps1         # adb reverse helper for the browser-fallback booth pa
 ```bash
 # backend / web
 npm install
-npm start                     # http://localhost:3000  (screen: /?display)
+npm run dev                   # Starts Vite dev server (port 5173, proxies to Express on 3000)
+npm run build                 # Builds React bundle into dist/
+npm start                     # Starts Express server on http://localhost:3000 (serves dist/)
 
 # flutter app  (dev machine: Node 24 present, Flutter 3.x)
 cd mobile
@@ -97,12 +104,10 @@ WebSocket broadcast round-trip against a valid key.
 
 ## Conventions / expectations
 
-- Frontend inserts model output with `textContent`, never `innerHTML` (it's
-  untrusted). Preserve that.
+- Frontend inserts model output using React state bindings, safeguarding against raw HTML injection.
 - Flutter: front camera default (selfie face-scan), front preview mirrored,
   rear preview un-mirrored. `flutter analyze` clean is the bar.
 - Don't commit or push unless explicitly asked. Secrets live in `.env` /
   the gitignored key file — never stage them, never echo their values.
-- Match existing style: `server.js` is ES modules; the web app is plain
-  vanilla JS/CSS with design tokens; keep the dark coral/teal "biometric scan"
+- Match existing style: `server.js` is ES modules; the web app is React using Vite; keep the dark coral/teal "biometric scan"
   theme consistent across web and Flutter.

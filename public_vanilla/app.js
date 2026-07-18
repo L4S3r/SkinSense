@@ -52,7 +52,7 @@ function stopCamera() {
 
 function resetToScanState() {
   document.body.removeAttribute("data-skin-type");
-  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "is-scanning");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear", "is-scanning");
   reportPanel.hidden = true;
   errorPanel.hidden = true;
   retryBtn.hidden = true;
@@ -95,6 +95,7 @@ async function captureAndAnalyze() {
   captureBtn.textContent = "Analyzing…";
   hint.hidden = true;
 
+  let success = false;
   try {
     const res = await fetch("/api/analyze", {
       method: "POST",
@@ -108,21 +109,39 @@ async function captureAndAnalyze() {
       throw new Error(payload.error || "The analysis failed. Please try again.");
     }
 
-    renderReport(payload.report);
+    success = true;
+    const morphShimmer = document.getElementById("uiMorphShimmer");
+    if (morphShimmer) {
+      morphShimmer.classList.add("active");
+      setTimeout(() => {
+        scanLine.hidden = true;
+        document.body.classList.remove("is-scanning");
+        renderReport(payload.report);
+      }, 200);
+      setTimeout(() => {
+        morphShimmer.classList.remove("active");
+      }, 800);
+    } else {
+      scanLine.hidden = true;
+      document.body.classList.remove("is-scanning");
+      renderReport(payload.report);
+    }
   } catch (err) {
     console.error("Analyze request failed:", err);
     showError(err.message || "Something went wrong. Please try again.");
   } finally {
-    scanLine.hidden = true;
-    document.body.classList.remove("is-scanning");
+    if (!success) {
+      scanLine.hidden = true;
+      document.body.classList.remove("is-scanning");
+    }
   }
 }
 
 // ------------------- Rendering -------------------
 function renderReport(report) {
   document.body.dataset.skinType = report.skin_type || "unclear";
-  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
-  if (report.skin_type && ["oily", "dry", "combination", "sensitive"].includes(report.skin_type)) {
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear");
+  if (report.skin_type && report.skin_type !== "unclear") {
     document.body.classList.add(`bg-${report.skin_type}`);
   }
   captureBtn.hidden = true;
@@ -138,9 +157,10 @@ function renderReport(report) {
 
   const obsContainer = document.getElementById("observations");
   obsContainer.innerHTML = "";
-  (report.observations || []).forEach((obs) => {
+  (report.observations || []).forEach((obs, index) => {
     const card = document.createElement("div");
     card.className = "observation";
+    card.style.animationDelay = `${0.35 + index * 0.08}s`;
     const label = document.createElement("span");
     label.className = "label";
     label.textContent = obs.label || "";
@@ -154,9 +174,10 @@ function renderReport(report) {
 
   const tipsList = document.getElementById("careTipsList");
   tipsList.innerHTML = "";
-  (report.care_tips || []).forEach((tip) => {
+  (report.care_tips || []).forEach((tip, index) => {
     const li = document.createElement("li");
     li.textContent = tip;
+    li.style.animationDelay = `${0.5 + index * 0.08}s`;
     tipsList.appendChild(li);
   });
 
@@ -198,7 +219,7 @@ function enterDisplayMode() {
 
 function showIdle(message) {
   document.body.removeAttribute("data-skin-type");
-  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "is-scanning");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear", "is-scanning");
   reportPanel.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;
@@ -210,7 +231,11 @@ function connectDisplaySocket() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const ws = new WebSocket(`${proto}://${location.host}/ws/display`);
 
-  ws.addEventListener("open", () => showIdle("Ready — waiting for the next scan…"));
+  ws.addEventListener("open", () => {
+    if (reportPanel.hidden) {
+      showIdle("Ready — waiting for the next scan…");
+    }
+  });
 
   ws.addEventListener("message", (event) => {
     let msg;
@@ -220,7 +245,9 @@ function connectDisplaySocket() {
       return;
     }
     if (msg.type === "hello") {
-      showIdle("Ready — waiting for the next scan…");
+      if (reportPanel.hidden) {
+        showIdle("Ready — waiting for the next scan…");
+      }
     } else if (msg.type === "report") {
       showDisplayReport(msg.report, msg.image);
     }
@@ -228,16 +255,20 @@ function connectDisplaySocket() {
 
   // Auto-reconnect so the booth screen survives a server restart / Wi-Fi blip.
   ws.addEventListener("close", () => {
-    showIdle("Reconnecting…");
+    if (reportPanel.hidden) {
+      showIdle("Reconnecting…");
+    }
     setTimeout(connectDisplaySocket, 2000);
   });
   ws.addEventListener("error", () => ws.close());
 }
 
-let idleTimer = null;
 function showDisplayReport(report, image) {
-  clearTimeout(idleTimer);
   viewfinderStatus.hidden = true;
+  reportPanel.hidden = true;
+  window.scrollTo({ top: 0 });
+  document.body.removeAttribute("data-skin-type");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear");
 
   // Show the captured photo in the viewfinder frame with a scan sweep,
   // then render the report using the shared renderer.
@@ -249,15 +280,27 @@ function showDisplayReport(report, image) {
   document.body.classList.add("is-scanning");
   scanLine.hidden = false;
   setTimeout(() => {
-    document.body.classList.remove("is-scanning");
-    scanLine.hidden = true;
-    renderReport(report);
-    captureBtn.hidden = true; // renderReport unhides some controls; keep them off
-    retryBtn.hidden = true;
+    const morphShimmer = document.getElementById("uiMorphShimmer");
+    if (morphShimmer) {
+      morphShimmer.classList.add("active");
+      setTimeout(() => {
+        document.body.classList.remove("is-scanning");
+        scanLine.hidden = true;
+        renderReport(report);
+        captureBtn.hidden = true; // renderReport unhides some controls; keep them off
+        retryBtn.hidden = true;
+      }, 200);
+      setTimeout(() => {
+        morphShimmer.classList.remove("active");
+      }, 800);
+    } else {
+      document.body.classList.remove("is-scanning");
+      scanLine.hidden = true;
+      renderReport(report);
+      captureBtn.hidden = true;
+      retryBtn.hidden = true;
+    }
   }, 1600);
-
-  // Return to the idle "waiting" state so the booth is ready for the next person.
-  idleTimer = setTimeout(() => showIdle("Ready — waiting for the next scan…"), 30000);
 }
 
 // ------------------- Events / boot -------------------
