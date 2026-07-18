@@ -51,6 +51,7 @@ function stopCamera() {
 }
 
 function resetToScanState() {
+  document.body.removeAttribute("data-skin-type");
   reportPanel.hidden = true;
   errorPanel.hidden = true;
   retryBtn.hidden = true;
@@ -116,6 +117,7 @@ async function captureAndAnalyze() {
 
 // ------------------- Rendering -------------------
 function renderReport(report) {
+  document.body.dataset.skinType = report.skin_type || "unclear";
   captureBtn.hidden = true;
   retryBtn.hidden = false;
   errorPanel.hidden = true;
@@ -187,6 +189,7 @@ function enterDisplayMode() {
 }
 
 function showIdle(message) {
+  document.body.removeAttribute("data-skin-type");
   reportPanel.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;

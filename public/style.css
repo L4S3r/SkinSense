@@ -28,6 +28,86 @@
   --radius: 18px;
 }
 
+/* Theme overrides by skin type attribute on body */
+body[data-skin-type="oily"] {
+  --bg: #D9E4E8;
+  --bg-raised: #E6EFF2;
+  --bg-raised-2: #E1E8EB;
+  --border: rgba(43, 88, 102, 0.12);
+  --border-strong: rgba(43, 88, 102, 0.22);
+  --coral: #2F5C6A;
+  --coral-dim: #21424E;
+  --teal: #517785;
+  --teal-dim: #3B5864;
+  --text: #263E48;
+  --text-muted: #517785;
+  --text-faint: #789AA6;
+}
+
+body[data-skin-type="dry"] {
+  --bg: #EAE0D5;
+  --bg-raised: #F5EBE0;
+  --bg-raised-2: #ECE2D5;
+  --border: rgba(124, 93, 67, 0.12);
+  --border-strong: rgba(124, 93, 67, 0.22);
+  --coral: #825E43;
+  --coral-dim: #644833;
+  --teal: #9C7E69;
+  --teal-dim: #7E634F;
+  --text: #594130;
+  --text-muted: #82644F;
+  --text-faint: #A88F7B;
+}
+
+body[data-skin-type="combination"] {
+  --bg: #E7E3DA;
+  --bg-raised: #F0ECE3;
+  --bg-raised-2: #D9E3E2;
+  --border: rgba(56, 90, 100, 0.12);
+  --border-strong: rgba(56, 90, 100, 0.22);
+  --coral: #3A5F6A;
+  --coral-dim: #2A464E;
+  --teal: #857463;
+  --teal-dim: #685A4D;
+  --text: #45423B;
+  --text-muted: #706B60;
+  --text-faint: #9E988D;
+}
+
+body[data-skin-type="normal"] {
+  --bg: #E2E6D3;
+  --bg-raised: #EDEFE3;
+  --bg-raised-2: #E8DFC8;
+  --border: rgba(74, 90, 62, 0.12);
+  --border-strong: rgba(74, 90, 62, 0.22);
+  --coral: #4F5D40;
+  --coral-dim: #3E4A32;
+  --teal: #6E7A5F;
+  --teal-dim: #4A5A3E;
+  --text: #4A5A3E;
+  --text-muted: #6E7A5F;
+  --text-faint: #8E9A80;
+}
+
+body[data-skin-type="sensitive"] {
+  --bg: #EADCD9;
+  --bg-raised: #F3E6E3;
+  --bg-raised-2: #E5D2CE;
+  --border: rgba(125, 91, 88, 0.12);
+  --border-strong: rgba(125, 91, 88, 0.22);
+  --coral: #825955;
+  --coral-dim: #644340;
+  --teal: #9C7774;
+  --teal-dim: #7E5B58;
+  --text: #5E4340;
+  --text-muted: #8B6B68;
+  --text-faint: #B29592;
+}
+
+body[data-skin-type="unclear"] {
+  /* Fall back to current default palette */
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -46,6 +126,12 @@ body {
   align-items: center;
   position: relative;
   overflow-x: hidden;
+  transition: background-color 400ms ease, color 400ms ease;
+}
+
+.report-panel,
+.observation {
+  transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease;
 }
 
 /* faint biometric grid backdrop */
