@@ -105,7 +105,18 @@ body[data-skin-type="sensitive"] {
 }
 
 body[data-skin-type="unclear"] {
-  /* Fall back to current default palette */
+  --bg: #E3E5E8;
+  --bg-raised: #ECEFF2;
+  --bg-raised-2: #DCE0E4;
+  --border: rgba(90, 100, 110, 0.12);
+  --border-strong: rgba(90, 100, 110, 0.22);
+  --coral: #4E555C;
+  --coral-dim: #373D42;
+  --teal: #78828A;
+  --teal-dim: #5C656C;
+  --text: #373D42;
+  --text-muted: #626B73;
+  --text-faint: #8D97A0;
 }
 
 * { box-sizing: border-box; }
