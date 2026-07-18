@@ -34,7 +34,7 @@ const openai = new OpenAI({
 
 // Vision-capable model used for the analysis. Override with the
 // SKIN_ANALYSIS_MODEL env var if you want a different model/tier.
-const MODEL = process.env.SKIN_ANALYSIS_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.SKIN_ANALYSIS_MODEL || "gemini-3.5-flash";
 
 // ------------------- App setup -------------------
 const app = express();
@@ -113,6 +113,26 @@ If no face is clearly visible, set "skin_type" to "unclear", keep
 wasn't clearly detected and suggest retaking the photo facing the
 camera in even lighting.`;
 
+// Helper to call OpenAI API wrapper with automated retries and exponential backoff
+// in case of 429 RateLimitErrors.
+async function callOpenAIWithRetry(params, retries = 3, initialDelay = 1500) {
+  let delay = initialDelay;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await openai.chat.completions.create(params);
+    } catch (err) {
+      const isRateLimit = err.status === 429 || (err.message && err.message.includes("429"));
+      if (isRateLimit && i < retries - 1) {
+        console.warn(`[Gemini API] Rate limit (429) encountered. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2; // exponential backoff
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 app.post("/api/analyze", async (req, res) => {
   try {
     const { image } = req.body;
@@ -127,7 +147,7 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await callOpenAIWithRetry({
       model: MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -169,6 +189,16 @@ app.post("/api/analyze", async (req, res) => {
     return res.json({ report });
   } catch (err) {
     console.error("Analyze error:", err);
+    if (err.status === 429 || (err.message && err.message.includes("429"))) {
+      return res.status(429).json({
+        error: "The AI scanner is temporarily busy (Rate Limit Exceeded). Please wait a few seconds and scan again.",
+      });
+    }
+    if (err.status === 404 || (err.message && err.message.includes("404"))) {
+      return res.status(404).json({
+        error: `The requested AI model "${MODEL}" was not found (Deprecated or Retired). Please update SKIN_ANALYSIS_MODEL in .env to a current supported model (e.g. gemini-3.5-flash).`,
+      });
+    }
     return res.status(500).json({
       error: "Something went wrong while analyzing the photo. Check the server logs for details.",
     });

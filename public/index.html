@@ -25,7 +25,28 @@
   </svg>
 
   <div class="grid-overlay" aria-hidden="true"></div>
-  <div id="skinBackdrop" aria-hidden="true"></div>
+  <div id="skinBackdrop" aria-hidden="true">
+    <!-- Oily background effects (floating/morphing liquid blobs) -->
+    <div class="oily-blob blob-1"></div>
+    <div class="oily-blob blob-2"></div>
+    <div class="oily-blob blob-3"></div>
+
+    <!-- Dry background effects (fine structural crystal grid / cell lines) -->
+    <svg class="dry-cells" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path class="cell-line line-1" d="M -10,-10 L 30,40 L 70,20 L 110,60" fill="none" stroke="currentColor" stroke-width="0.15" />
+      <path class="cell-line line-2" d="M 110,-10 L 70,30 L 30,10 L -10,80" fill="none" stroke="currentColor" stroke-width="0.15" />
+      <path class="cell-line line-3" d="M -10,40 L 50,60 L 80,40 L 110,90" fill="none" stroke="currentColor" stroke-width="0.15" />
+    </svg>
+
+    <!-- Sensitive background effects (radiating soothing aura waves) -->
+    <div class="sensitive-ring ring-1"></div>
+    <div class="sensitive-ring ring-2"></div>
+    <div class="sensitive-ring ring-3"></div>
+
+    <!-- Normal background effects (breathing organic waves / soft light sweep) -->
+    <div class="normal-wave wave-1"></div>
+    <div class="normal-wave wave-2"></div>
+  </div>
 
   <header class="site-header">
     <div class="eyebrow">AI · Skin Analysis</div>

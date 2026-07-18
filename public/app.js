@@ -52,7 +52,7 @@ function stopCamera() {
 
 function resetToScanState() {
   document.body.removeAttribute("data-skin-type");
-  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "is-scanning");
   reportPanel.hidden = true;
   errorPanel.hidden = true;
   retryBtn.hidden = true;
@@ -89,6 +89,7 @@ async function captureAndAnalyze() {
   stopCamera();
 
   // Enter "scanning" state.
+  document.body.classList.add("is-scanning");
   scanLine.hidden = false;
   captureBtn.disabled = true;
   captureBtn.textContent = "Analyzing…";
@@ -113,6 +114,7 @@ async function captureAndAnalyze() {
     showError(err.message || "Something went wrong. Please try again.");
   } finally {
     scanLine.hidden = true;
+    document.body.classList.remove("is-scanning");
   }
 }
 
@@ -164,6 +166,7 @@ function renderReport(report) {
 }
 
 function showError(message) {
+  document.body.classList.remove("is-scanning");
   reportPanel.hidden = true;
   errorPanel.hidden = false;
   errorText.textContent = message;
@@ -195,7 +198,7 @@ function enterDisplayMode() {
 
 function showIdle(message) {
   document.body.removeAttribute("data-skin-type");
-  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive");
+  document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "is-scanning");
   reportPanel.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;
@@ -243,8 +246,10 @@ function showDisplayReport(report, image) {
     frozenFrame.hidden = false;
     video.hidden = true;
   }
+  document.body.classList.add("is-scanning");
   scanLine.hidden = false;
   setTimeout(() => {
+    document.body.classList.remove("is-scanning");
     scanLine.hidden = true;
     renderReport(report);
     captureBtn.hidden = true; // renderReport unhides some controls; keep them off
