@@ -21,8 +21,11 @@ export default function App() {
 
   // Sync state with body classes and attributes to trigger styling transitions
   useEffect(() => {
-    const skinType = report?.skin_type || "unclear";
-    document.body.dataset.skinType = report ? skinType : "unclear";
+    if (report) {
+      document.body.dataset.skinType = report.skin_type || "unclear";
+    } else {
+      delete document.body.dataset.skinType;
+    }
 
     // Clean up class names
     document.body.classList.remove(
