@@ -68,6 +68,7 @@ export default function App() {
       setIsExportingPdf(false);
     }
   };
+
   useEffect(() => {
     const skinType = report?.skin_type || "unclear";
 
@@ -134,9 +135,19 @@ export default function App() {
     let reconnectTimeout = null;
 
     const connectDisplaySocket = () => {
-      const proto = window.location.protocol === "https:" ? "wss" : "ws";
-      const host = window.location.host;
-      ws = new WebSocket(`${proto}://${host}/ws/display`);
+      let wsUrl;
+      const customApiBase = import.meta.env.VITE_API_BASE_URL;
+      if (customApiBase) {
+        const url = new URL(customApiBase);
+        const wsProto = url.protocol === "https:" ? "wss:" : "ws:";
+        wsUrl = `${wsProto}//${url.host}/ws/display`;
+      } else {
+        const proto = window.location.protocol === "https:" ? "wss" : "ws";
+        const host = window.location.host;
+        wsUrl = `${proto}://${host}/ws/display`;
+      }
+
+      ws = new WebSocket(wsUrl);
 
       ws.addEventListener("open", () => {
         setReport((prev) => {
@@ -284,16 +295,31 @@ export default function App() {
 
     const w = video.videoWidth || 720;
     const h = video.videoHeight || 900;
-    canvas.width = w;
-    canvas.height = h;
+
+    // Downscale capture to max 640px for ultra-fast network transmission & AI vision encoding
+    const maxDim = 640;
+    let targetW = w;
+    let targetH = h;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) {
+        targetW = maxDim;
+        targetH = Math.round((h * maxDim) / w);
+      } else {
+        targetH = maxDim;
+        targetW = Math.round((w * maxDim) / h);
+      }
+    }
+
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext("2d");
 
     // Mirror image for a natural self-facing preview
-    ctx.translate(w, 0);
+    ctx.translate(targetW, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, 0, 0, targetW, targetH);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
     setCapturedImage(dataUrl);
     setLastCapturedPhoto(dataUrl);
 
@@ -304,7 +330,8 @@ export default function App() {
 
     let success = false;
     try {
-      const res = await fetch("/api/analyze", {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "";
+      const res = await fetch(`${apiBase}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: dataUrl }),
@@ -339,8 +366,6 @@ export default function App() {
   const handleRetry = () => {
     startCamera();
   };
-
-
 
   return (
     <>
@@ -410,7 +435,7 @@ export default function App() {
         <span className="bubble b12"></span>
         <span className="bubble b13"></span>
         <span className="soap-wrap sw1"><span className="soap-bar"></span></span>
-        <span className="soap-wrap sw2"><span class="soap-bar"></span></span>
+        <span className="soap-wrap sw2"><span className="soap-bar"></span></span>
       </div>
 
       <header className="site-header">
@@ -426,7 +451,7 @@ export default function App() {
               {/* Arch 2 (middle arch inside o) */}
               <path d="M 11.5 24.5 A 5.5 5.5 0 0 1 22.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
               {/* Arch 3 (inner arch inside o) */}
-              <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 19.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 18.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             <span>niq</span>
           </h1>

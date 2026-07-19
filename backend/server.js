@@ -1,10 +1,9 @@
 // =====================================================
-// FaceChain Skin Analyzer — backend
-// Serves the camera UI and calls the OpenAI API (vision)
-// to produce a skin-type analysis report.
+// Meloniq Skin Analyzer — Standalone Backend
+// Serves the API, WebSocket display channel, and static assets
 // =====================================================
 
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 import OpenAI from "openai";
 import http from "http";
@@ -14,8 +13,11 @@ import { WebSocketServer } from "ws";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Load .env file from backend directory or parent directory
+dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({ path: path.join(__dirname, "../.env") });
+
 // ------------------- API key loading -------------------
-// The key comes from the GEMINI_API_KEY variable in .env (loaded above).
 const apiKey = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim();
 if (!apiKey) {
   console.warn(
@@ -26,21 +28,51 @@ if (!apiKey) {
 }
 
 // Gemini exposes an OpenAI-compatible endpoint, so we reuse the OpenAI
-// SDK and just point it at Google's base URL.
+// SDK and point it at Google's base URL.
 const openai = new OpenAI({
   apiKey: apiKey || "missing-key",
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
-// Vision-capable model used for the analysis. Override with the
-// SKIN_ANALYSIS_MODEL env var if you want a different model/tier.
+// Vision-capable model used for the analysis.
 const MODEL = process.env.SKIN_ANALYSIS_MODEL || "gemini-3.5-flash";
 
 // ------------------- App setup -------------------
 const app = express();
 app.use(express.json({ limit: "15mb" })); // photos as base64 need headroom
-app.use(express.static(path.join(__dirname, "dist")));
-app.use(express.static(path.join(__dirname, "public_vanilla")));
+
+// Enable CORS for frontend cross-origin access
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Root status endpoint for headless backend
+app.get("/", (req, res) => {
+  res.json({
+    service: "Meloniq AI Backend API",
+    status: "running",
+    endpoints: {
+      health: "GET /api/health",
+      analyze: "POST /api/analyze",
+      websocket: "WS /ws/display",
+    },
+  });
+});
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    model: MODEL,
+    hasApiKey: Boolean(apiKey),
+  });
+});
 
 // ------------------- Booth display channel -------------------
 // The Flutter phone captures a photo and POSTs it here; the booth SCREEN is a
@@ -58,11 +90,11 @@ wss.on("connection", (socket) => {
   try {
     socket.send(JSON.stringify({ type: "hello" }));
   } catch {
-    // ignore — a socket that fails here will be cleaned up on the next broadcast
+    // ignore — a socket that fails here will be cleaned up on next broadcast
   }
 });
 
-// Send a payload to every connected booth screen, dropping any dead sockets.
+// Send a payload to every connected booth screen, dropping dead sockets.
 function broadcastToDisplays(payload) {
   const data = JSON.stringify(payload);
   for (const socket of displays) {
@@ -115,7 +147,6 @@ wasn't clearly detected and suggest retaking the photo facing the
 camera in even lighting.`;
 
 // Helper to call OpenAI API wrapper with automated retries and exponential backoff
-// in case of 429 RateLimitErrors.
 async function callOpenAIWithRetry(params, retries = 3, initialDelay = 1500) {
   let delay = initialDelay;
   for (let i = 0; i < retries; i++) {
@@ -150,6 +181,9 @@ app.post("/api/analyze", async (req, res) => {
 
     const response = await callOpenAIWithRetry({
       model: MODEL,
+      temperature: 0.2,
+      max_tokens: 600,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -183,8 +217,7 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
-    // Push the finished report (plus the captured photo) to any booth
-    // screens, then return it to the phone that triggered the scan.
+    // Push finished report to any booth screens, then return to caller.
     broadcastToDisplays({ type: "report", report, image });
 
     return res.json({ report });
@@ -197,7 +230,7 @@ app.post("/api/analyze", async (req, res) => {
     }
     if (err.status === 404 || (err.message && err.message.includes("404"))) {
       return res.status(404).json({
-        error: `The requested AI model "${MODEL}" was not found (Deprecated or Retired). Please update SKIN_ANALYSIS_MODEL in .env to a current supported model (e.g. gemini-3.5-flash).`,
+        error: `The requested AI model "${MODEL}" was not found. Please update SKIN_ANALYSIS_MODEL in .env (e.g. gemini-3.5-flash).`,
       });
     }
     return res.status(500).json({
@@ -207,10 +240,10 @@ app.post("/api/analyze", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-// Listen on 0.0.0.0 so the Flutter phone can reach the server over the LAN
-// (not just localhost). The booth screen opens `?display` on the same host.
+// Listen on 0.0.0.0 so external clients / phones can reach the server over LAN
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n✨ Meloniq Skin Analyzer running`);
-  console.log(`   Booth screen : http://localhost:${PORT}/?display`);
-  console.log(`   Phone posts  : http://<this-laptop-LAN-ip>:${PORT}/api/analyze\n`);
+  console.log(`\n✨ Meloniq Standalone Backend API running on port ${PORT}`);
+  console.log(`   Health Check : http://localhost:${PORT}/api/health`);
+  console.log(`   API Endpoint : http://localhost:${PORT}/api/analyze`);
+  console.log(`   WebSocket    : ws://localhost:${PORT}/ws/display\n`);
 });

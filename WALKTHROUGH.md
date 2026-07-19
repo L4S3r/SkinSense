@@ -115,6 +115,11 @@ tap "Capture & send"
 
 ## 7. Running it & Verification
 
-- Development mode: `npm start` (backend) + `npm run dev` (Vite on port 5173).
-- Production mode: `npm run build` + `npm start` (Express on port 3000).
-- Download as PDF is accessible in both normal web sessions and booth display mode.
+- **Standalone Backend Server (Port 3000)**: `cd backend && npm start` (or `npm run backend` from root).
+- **Frontend Dev Server (Port 5173)**: `cd frontend && npm run dev` (or `npm run frontend` from root).
+- **Network & Firewall Setup**:
+  - Linux Mini-Server (Ubuntu/Debian): `sudo ufw allow 3000/tcp`
+  - Linux Mini-Server (Fedora/RHEL): `sudo firewall-cmd --zone=public --add-port=3000/tcp --permanent && sudo firewall-cmd --reload`
+  - Windows Host: `New-NetFirewallRule -DisplayName "Meloniq Backend 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -Profile Any`
+- **Health Check**: Verify connectivity from mobile browser at `http://<backend-ip>:3000/api/health`.
+- **Download as PDF**: Accessible in both normal web sessions and booth display mode.

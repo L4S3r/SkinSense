@@ -6,13 +6,48 @@ backend at `http://<host>/api/analyze`. The backend runs the skin-type analysis
 and broadcasts the report to any `?display` screen over WebSocket.
 
 The backend host is editable in-app (tap the host chip); it defaults to
-`192.168.1.2:3000`. The phone and the machine running the backend must be on the
-same LAN — point the app at the backend's LAN IP, not `localhost`.
+`192.168.1.2:3000`. The phone and the machine running the backend (PC or Linux mini-server) must be on the same LAN — point the app at the backend's LAN IP, not `localhost`.
+
+## Network & Firewall Setup (Windows & Linux Mini-Servers)
+
+When connecting a phone to a backend running on a Windows PC or Linux mini-server laptop over Wi-Fi or Ethernet:
+
+### 1. Firewall Port Rule (Port 3000)
+
+- **Linux Mini-Server (ufw - Ubuntu/Debian)**:
+  ```bash
+  sudo ufw allow 3000/tcp
+  ```
+- **Linux Mini-Server (firewalld - Fedora/RHEL)**:
+  ```bash
+  sudo firewall-cmd --zone=public --add-port=3000/tcp --permanent && sudo firewall-cmd --reload
+  ```
+- **Windows Host (PowerShell as Administrator)**:
+  ```powershell
+  New-NetFirewallRule -DisplayName "Meloniq Backend 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -Profile Any
+  ```
+
+### 2. Device Connection Scenarios
+
+- **Physical Android/iOS Device (LAN/Wi-Fi/Ethernet)**:
+  Enter your backend host IP and port: `192.168.1.45:3000`. Note: If your Linux mini-server is on Ethernet and phone is on Wi-Fi, ensure your router bridges Ethernet and Wi-Fi to the same subnet (`192.168.1.x`).
+- **Android Emulator**:
+  Enter `10.0.2.2:3000` (maps Android emulator virtual net to host).
+- **USB Tunneling (ADB Reverse)**:
+  Run `adb reverse tcp:3000 tcp:3000` on your host machine, then enter `127.0.0.1:3000` in the mobile app.
+
+### 3. Quick 5-Second Diagnostics
+
+Open Chrome/Safari on your mobile device and test:
+```text
+http://<backend-ip>:3000/api/health
+```
+If it returns `{"status":"ok"...}`, the mobile app will connect immediately!
 
 ## Prerequisites (both platforms)
 
 - Flutter 3.x (`flutter doctor` should be green)
-- The Meloniq backend running and reachable on your LAN (`npm start` in the repo root)
+- The Meloniq backend running and reachable on your LAN (`cd backend && npm start`)
 
 ```bash
 cd mobile

@@ -74,22 +74,28 @@ booth-connect.ps1         # adb reverse helper for the browser-fallback booth pa
 - Report JSON shape: `skin_type, confidence, summary, observations[], care_tips[], caveats`.
   No clear face → `skin_type: "unclear"` (don't make the model guess).
 
-## Config (all via `.env`)
+## Config (`backend/.env` & `frontend/.env`)
 
+### Backend (`backend/.env`)
 | var | default | note |
 |---|---|---|
-| `GEMINI_API_KEY` | — | required |
-| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | also: `-flash-lite`, `-pro` |
-| `PORT` | `3000` | |
+| `GEMINI_API_KEY` | — | required (from Google AI Studio) |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | options: `gemini-3.5-flash` (balanced), `gemini-3.5-flash-lite` (<1s fast), `gemini-3.5-pro` (high precision) |
+| `PORT` | `3000` | port backend listens on |
+
+### Frontend (`frontend/.env`)
+| var | default | note |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:3000` | direct backend API & WebSocket base URL |
 
 ## Commands
 
 ```bash
 # backend / web
-npm install
-npm run dev                   # Starts Vite dev server (port 5173, proxies to Express on 3000)
-npm run build                 # Builds React bundle into dist/
-npm start                     # Starts Express server on http://localhost:3000 (serves dist/)
+npm run install:all           # Installs both backend and frontend dependencies
+npm run backend               # Starts standalone Express + WebSocket server on port 3000 (cd backend && npm start)
+npm run frontend              # Starts Vite React dev server on port 5173 (cd frontend && npm run dev)
+npm run build                 # Builds React frontend bundle into dist/ (cd frontend && npm run build)
 
 # flutter app  (dev machine: Node 24 present, Flutter 3.x)
 cd mobile
@@ -105,12 +111,16 @@ WebSocket broadcast round-trip against a valid key.
 
 ## Conventions / expectations
 
-- **React Only (`/src`)**: All web frontend feature work, UI updates, and bug fixes MUST be implemented exclusively in the React codebase under `/src/` (`src/App.jsx`, `src/App.css`, etc.).
+- **React Only (`frontend/src/`)**: All web frontend feature work, UI updates, and bug fixes MUST be implemented exclusively in the React codebase under `frontend/src/` (`frontend/src/App.jsx`, `frontend/src/App.css`, etc.).
+- **Backend (`backend/`)**: Pure headless API + WebSocket service (`backend/server.js`). Handles `POST /api/analyze`, `GET /api/health`, and `WS /ws/display`. Does not serve static frontend HTML/JS files.
 - **`public_vanilla/` is Legacy**: The `public_vanilla/` directory is kept for historical reference only. Do NOT make new changes, add features, or write code in `public_vanilla/`.
 - Frontend inserts model output using React state bindings, safeguarding against raw HTML injection.
 - Flutter: front camera default (selfie face-scan), front preview mirrored,
   rear preview un-mirrored. `flutter analyze` clean is the bar.
+- Firewall rules (port 3000):
+  - Linux (Ubuntu/Debian): `sudo ufw allow 3000/tcp`
+  - Linux (Fedora/RHEL): `sudo firewall-cmd --zone=public --add-port=3000/tcp --permanent && sudo firewall-cmd --reload`
+  - Windows PowerShell: `New-NetFirewallRule -DisplayName "Meloniq Backend 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -Profile Any`
 - Don't commit or push unless explicitly asked. Secrets live in `.env` /
   the gitignored key file — never stage them, never echo their values.
-- Match existing style: `server.js` is ES modules; the web app is React using Vite; keep the dark coral/teal "biometric scan"
-  theme consistent across web and Flutter.
+- Match existing style: `server.js` is ES modules; the web app is React using Vite.

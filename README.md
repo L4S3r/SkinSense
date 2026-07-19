@@ -41,50 +41,81 @@ The photo is only ever sent to Gemini for that single request — this app does 
 
 1. **Install dependencies**:
    ```bash
-   npm install
+   # Option A: Install both backend and frontend dependencies from root
+   npm run install:all
+
+   # Option B: Install individually
+   cd backend && npm install
+   cd ../frontend && npm install
    ```
 
-2. **Configure API Key**:
-   ```bash
-   cp .env.example .env
-   # Open .env and set GEMINI_API_KEY to your Gemini API key
-   ```
-
-3. **Run the App**:
-
-   - **Development Mode (Hot-Reloading)**:
-     Start both the Express backend and the Vite dev server.
+2. **Configure Environment Variables**:
+   - **Backend Configuration**:
      ```bash
-     # In terminal 1: starts backend Express server on port 3000
-     npm start
+     cp backend/.env.example backend/.env
+     # Set GEMINI_API_KEY to your Google Gemini API key
+     ```
+   - **Frontend Configuration**:
+     ```bash
+     cp frontend/.env.example frontend/.env
+     # Set VITE_API_BASE_URL to your backend / mini-server URL (default: http://localhost:3000)
+     ```
 
-     # In terminal 2: starts Vite dev server on port 5173
+3. **Running Backend & Frontend as Separate Entities**:
+
+   - **Standalone Backend Server (Port 3000)**:
+     Launch the headless Express API + WebSocket server independently on port 3000. It handles API requests (`POST /api/analyze`) and WebSocket connections (`WS /ws/display`) without serving web app UI assets.
+     ```bash
+     cd backend
+     npm start
+     # Or from root: npm run backend
+     ```
+     Test backend health: **http://localhost:3000/api/health**
+
+   - **Frontend Application (Port 5173)**:
+     Launch the Meloniq web UI using Vite React dev server on port 5173:
+     ```bash
+     cd frontend
      npm run dev
+     # Or from root: npm run frontend
      ```
-     Open **http://localhost:5173** in your browser, allow camera access, and click **Capture & analyze**.
+     Open **http://localhost:5173** in your browser.
 
-   - **Production Mode (Pre-compiled)**:
-     Compile the React application first, then start the Express server.
-     ```bash
-     # Compile the React app (outputs to dist/)
-     npm run build
-
-     # Start the Express server (serves compiled files from dist/ on port 3000)
-     npm start
+   - **Connecting Frontend to a Remote Mini-Server**:
+     To point the frontend to a backend hosted on a mini-server / LAN IP (e.g., `http://192.168.1.100:3000`), update `frontend/.env`:
+     ```env
+     VITE_API_BASE_URL=http://192.168.1.100:3000
      ```
-     Open **http://localhost:3000** in your browser.
 
 ## Configuration
 
-All config is via `.env` (see `.env.example`):
+### Backend (`backend/.env`)
 
 | Env var | Default | What it does |
 |---|---|---|
-| `GEMINI_API_KEY` | _(none)_ | Your Google Gemini API key. Required. |
-| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | Vision model used for analysis. Alternatives: `gemini-2.5-flash-lite`, `gemini-2.5-pro`. |
-| `PORT` | `3000` | Port the server listens on. |
+| `GEMINI_API_KEY` | _(none)_ | Your Google Gemini API key (from https://aistudio.google.com/apikey). Required. |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | Vision model used for skin analysis. Options below. |
+| `PORT` | `3000` | Port the backend server listens on. |
 
-Gemini is called through its **OpenAI-compatible endpoint**, so the code reuses the `openai` SDK pointed at Google's base URL — no separate Google SDK needed.
+#### Available Gemini Models (Pros & Cons):
+
+- `gemini-3.5-flash` **(Default - Recommended)**:
+  - **Pros**: Balanced vision accuracy, detailed skin observations, fast latency (1-2s), generous free tier quotas.
+  - **Cons**: Slightly slower than `flash-lite`.
+- `gemini-3.5-flash-lite`:
+  - **Pros**: Ultra-fast sub-second latency (<1s response times), lowest token cost, ideal for high-traffic live booths.
+  - **Cons**: Slightly less detailed observation notes on subtle redness/tone nuances.
+- `gemini-3.5-pro`:
+  - **Pros**: Highest precision vision reasoning, handles uneven lighting best, rich dermatological observation notes.
+  - **Cons**: Higher latency (3-5s per scan), lower free-tier rate limits (15 requests/min).
+
+### Frontend (`frontend/.env`)
+
+| Env var | Default | What it does |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:3000` | Direct backend API & WebSocket base URL. Point to your mini-server IP/domain when hosting backend remotely. |
+
+Gemini is called through its **OpenAI-compatible endpoint**, so the backend code reuses the `openai` SDK pointed at Google's base URL — no separate Google SDK required.
 
 ## Publication-Ready A4 PDF Export
 
@@ -146,30 +177,43 @@ adb connect <phone-ip>:<debug-port>
 
 Then open **http://localhost:3000** (not the LAN IP) in the phone's browser. `booth-connect.ps1` auto-detects the device and prints the next step; run it with `-Serve` to also start the server. Re-run it if the connection drops.
 
-### Booth gotchas
+### Booth gotchas & Network Troubleshooting
 
-- **Windows Firewall**: the first time the phone connects, Windows prompts to allow Node.js on private networks — allow it, or the phone can't reach port 3000.
-- **No auth** on `/api/analyze` or the WebSocket. Fine for a closed booth LAN, but anyone on the same Wi-Fi who knows the address could POST an image or connect a display. Don't expose this to the public internet as-is.
-- The wireless-debugging **port changes** each session; re-check with `adb devices -l` if `booth-connect.ps1` can't find the device.
+- **Linux Mini-Server Firewall (Ubuntu/Debian)**: Allow port 3000:
+  ```bash
+  sudo ufw allow 3000/tcp
+  ```
+- **Linux Mini-Server Firewall (Fedora/RHEL)**:
+  ```bash
+  sudo firewall-cmd --zone=public --add-port=3000/tcp --permanent && sudo firewall-cmd --reload
+  ```
+- **Windows Firewall (PowerShell as Administrator)**: Allow port 3000 on all network profiles:
+  ```powershell
+  New-NetFirewallRule -DisplayName "Meloniq Backend 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -Profile Any
+  ```
+- **Ethernet vs Wi-Fi Subnets**: If the backend machine is on Ethernet and the mobile phone is on Wi-Fi, verify your router bridges both to the same IP subnet (e.g. `192.168.1.x`).
+- **5-Second Diagnostics**: On the phone browser, navigate to `http://<backend-ip>:3000/api/health`. If it returns `{"status":"ok"}`, network connectivity is confirmed.
+- **No auth** on `/api/analyze` or the WebSocket. Fine for a closed booth LAN, but don't expose this to the public internet as-is.
 
 ## Project structure
 
 ```
 Face-skin/
-├── server.js               # Express + Gemini call + WebSocket display channel (serves dist/)
-├── package.json            # deps: express, openai, ws, react, react-dom, jspdf, html2canvas, vite
-├── vite.config.js          # Vite config with React plugin and proxy settings
-├── index.html              # Vite HTML entrypoint template with Google Fonts (Playfair Display, DM Sans)
-├── .env.example            # committed template — copy to .env
-├── .env                    # your real key (gitignored)
+├── backend/                # Standalone Express & WebSocket backend entity
+│   ├── server.js           # Express + Gemini call + WebSocket display channel (serves dist/)
+│   ├── package.json        # backend deps: express, openai, ws, dotenv
+│   ├── .env.example        # template — copy to .env
+│   └── .env                # your real key (gitignored)
+├── frontend/               # Standalone React frontend entity
+│   ├── src/                # React source files (App.jsx, App.css, main.jsx)
+│   ├── index.html          # Vite HTML entrypoint template with Google Fonts
+│   ├── vite.config.js      # Vite config with React plugin and proxy settings
+│   └── package.json        # frontend deps: react, react-dom, jspdf, html2canvas, vite
+├── package.json            # Root workspace package with npm run backend / frontend scripts
 ├── booth-connect.ps1       # adb-reverse helper for browser fallback
 ├── FaceChain.py            # original Colab notebook (ancestor, not run by app)
 ├── README.md               # setup + booth + PDF export docs
 ├── WALKTHROUGH.md          # full guided tour of the codebase
-├── src/                    # React frontend source files
-│   ├── main.jsx            # React app mount script
-│   ├── App.jsx             # Camera capture, report rendering, display mode, A4 PDF export template
-│   └── App.css             # Meloniq botanical brand design system tokens & animations
 ├── public_vanilla/         # Backup of legacy vanilla JS/CSS assets
 └── mobile/                 # Flutter capture app (booth phone station)
     └── lib/main.dart       # front-camera capture → POST to backend

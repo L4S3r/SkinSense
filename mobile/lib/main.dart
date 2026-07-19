@@ -116,7 +116,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
     _lens = camera.lensDirection;
     final controller = CameraController(
       camera,
-      ResolutionPreset.high,
+      ResolutionPreset.medium,
       enableAudio: false,
     );
     _controller = controller;
@@ -161,7 +161,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
       final Uint8List bytes = await shot.readAsBytes();
       final String dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
-      final uri = Uri.parse('http://$_host/api/analyze');
+      String cleanHost = _host.trim();
+      cleanHost = cleanHost.replaceAll(RegExp(r'^https?://'), '');
+      cleanHost = cleanHost.replaceAll(RegExp(r'/$'), '');
+
+      final uri = Uri.parse('http://$cleanHost/api/analyze');
       final res = await http
           .post(
             uri,
@@ -229,8 +233,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
       ),
     );
     if (result != null && result.isNotEmpty) {
-      setState(() => _host = result);
-      await _saveHost(result);
+      String clean = result.trim();
+      clean = clean.replaceAll(RegExp(r'^https?://'), '');
+      clean = clean.replaceAll(RegExp(r'/$'), '');
+      setState(() => _host = clean);
+      await _saveHost(clean);
     }
   }
 
