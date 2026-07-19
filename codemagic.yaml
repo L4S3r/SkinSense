@@ -35,7 +35,7 @@ workflows:
           cd ios
           pod install
 
-      - name: Build iOS IPA
+      - name: Build iOS App
         script: |
           cd mobile
           if [ -n "$CM_CERTIFICATE" ]; then
@@ -48,14 +48,23 @@ workflows:
             xcode-project use-profiles
             flutter build ipa --release
           else
-            # Unsigned build fallback for manual signing / ALTServer / Sideloading
-            flutter build ipa --release --no-codesign
+            # Build unsigned iOS app bundle for sideloading / AltStore / Sideloadly
+            flutter build ios --release --no-codesign
+          fi
+
+      - name: Package Unsigned IPA (if no code signing certificate)
+        script: |
+          cd mobile/build/ios/iphoneos
+          if [ -d "Runner.app" ]; then
+            mkdir -p Payload
+            cp -r Runner.app Payload/
+            zip -r MeloniqCapture-Unsigned.ipa Payload
           fi
     artifacts:
+      - mobile/build/ios/iphoneos/*.ipa
       - mobile/build/ios/ipa/*.ipa
       - mobile/build/ios/iphoneos/*.app
       - mobile/build/ios/archive/*.xcarchive
-      - mobile/build/ios/Runner.app
 
   # -----------------------------------------------------
   # 2. iOS Debug / Ad-Hoc Build (Fast test build)
@@ -85,9 +94,18 @@ workflows:
         script: |
           cd mobile
           flutter build ios --debug --no-codesign
+
+      - name: Package Debug IPA
+        script: |
+          cd mobile/build/ios/iphoneos
+          if [ -d "Runner.app" ]; then
+            mkdir -p Payload
+            cp -r Runner.app Payload/
+            zip -r MeloniqCapture-Debug.ipa Payload
+          fi
     artifacts:
+      - mobile/build/ios/iphoneos/*.ipa
       - mobile/build/ios/iphoneos/*.app
-      - mobile/build/ios/ipa/*.ipa
 
   # -----------------------------------------------------
   # 3. Android Release APK Build (Bonus multi-platform)

@@ -28,13 +28,22 @@ workflows:
           pod install
           cd ..
 
-      - name: Build iOS IPA
+      - name: Build iOS App
         script: |
-          flutter build ipa --release --no-codesign
+          flutter build ios --release --no-codesign
+
+      - name: Package Unsigned IPA
+        script: |
+          cd build/ios/iphoneos
+          if [ -d "Runner.app" ]; then
+            mkdir -p Payload
+            cp -r Runner.app Payload/
+            zip -r MeloniqCapture-Unsigned.ipa Payload
+          fi
     artifacts:
+      - build/ios/iphoneos/*.ipa
       - build/ios/ipa/*.ipa
       - build/ios/iphoneos/*.app
-      - build/ios/archive/*.xcarchive
 
   ios-debug:
     name: Meloniq Capture - iOS Debug Build
@@ -59,6 +68,15 @@ workflows:
       - name: Build iOS Debug Application
         script: |
           flutter build ios --debug --no-codesign
+
+      - name: Package Debug IPA
+        script: |
+          cd build/ios/iphoneos
+          if [ -d "Runner.app" ]; then
+            mkdir -p Payload
+            cp -r Runner.app Payload/
+            zip -r MeloniqCapture-Debug.ipa Payload
+          fi
     artifacts:
+      - build/ios/iphoneos/*.ipa
       - build/ios/iphoneos/*.app
-      - build/ios/ipa/*.ipa
