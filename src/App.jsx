@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import "./App.css";
 
 export default function App() {
   const [isDisplay] = useState(() => {
@@ -9,25 +12,71 @@ export default function App() {
   const [viewfinderStatusVisible, setViewfinderStatusVisible] = useState(true);
   const [cameraAllowed, setCameraAllowed] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
+  const [lastCapturedPhoto, setLastCapturedPhoto] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [morphActive, setMorphActive] = useState(false);
+  const [flashActive, setFlashActive] = useState(false);
+  const [revealActive, setRevealActive] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [wsStatusText, setWsStatusText] = useState("Connecting to scanner…");
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const reportRef = useRef(null);
+  const pdfTemplateRef = useRef(null);
 
-  // Sync state with body classes and attributes to trigger styling transitions
+  // Export report as high-quality publication-ready A4 PDF document
+  const downloadReportAsPDF = async () => {
+    if (!report || isExportingPdf || !pdfTemplateRef.current) return;
+
+    setIsExportingPdf(true);
+
+    try {
+      const exportElement = pdfTemplateRef.current;
+
+      const reportCanvas = await html2canvas(exportElement, {
+        backgroundColor: "#FAFBF8",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = reportCanvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // A4 dimensions are 210mm x 297mm
+      pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      const formattedDate = `${year}-${month}-${day}`;
+
+      pdf.save(`meloniq-skin-report-${formattedDate}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Couldn't generate the PDF document. Please try again.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
   useEffect(() => {
+    const skinType = report?.skin_type || "unclear";
+
     if (report) {
-      document.body.dataset.skinType = report.skin_type || "unclear";
+      document.body.dataset.skinType = skinType;
     } else {
       delete document.body.dataset.skinType;
     }
 
-    // Clean up class names
     document.body.classList.remove(
       "bg-oily",
       "bg-dry",
@@ -66,6 +115,17 @@ export default function App() {
     };
   }, [report, isScanning, isDisplay]);
 
+  // Trigger reveal animation when a report is loaded
+  useEffect(() => {
+    if (report) {
+      setRevealActive(false);
+      const timer = setTimeout(() => {
+        setRevealActive(true);
+      }, 20);
+      return () => clearTimeout(timer);
+    }
+  }, [report]);
+
   // Handle WebSocket display channel events in display mode
   useEffect(() => {
     if (!isDisplay) return;
@@ -79,29 +139,44 @@ export default function App() {
       ws = new WebSocket(`${proto}://${host}/ws/display`);
 
       ws.addEventListener("open", () => {
-        setWsStatusText("Ready — waiting for the next scan…");
-        setViewfinderStatusVisible(true);
+        setReport((prev) => {
+          if (!prev) {
+            setWsStatusText("Ready — waiting for the next scan…");
+            setViewfinderStatusVisible(true);
+          }
+          return prev;
+        });
       });
 
       ws.addEventListener("message", (event) => {
         let msg;
         try {
           msg = JSON.parse(event.data);
-        } catch (err) {
+        } catch {
           return;
         }
 
         if (msg.type === "hello") {
-          setWsStatusText("Ready — waiting for the next scan…");
-          setViewfinderStatusVisible(true);
+          setReport((prev) => {
+            if (!prev) {
+              setWsStatusText("Ready — waiting for the next scan…");
+              setViewfinderStatusVisible(true);
+            }
+            return prev;
+          });
         } else if (msg.type === "report") {
           handleDisplayReport(msg.report, msg.image);
         }
       });
 
       ws.addEventListener("close", () => {
-        setWsStatusText("Reconnecting…");
-        setViewfinderStatusVisible(true);
+        setReport((prev) => {
+          if (!prev) {
+            setWsStatusText("Reconnecting…");
+            setViewfinderStatusVisible(true);
+          }
+          return prev;
+        });
         reconnectTimeout = setTimeout(connectDisplaySocket, 2000);
       });
 
@@ -113,11 +188,14 @@ export default function App() {
     const handleDisplayReport = (newReport, newImage) => {
       window.scrollTo({ top: 0 });
       setReport(null);
-      setCapturedImage(newImage);
+      if (newImage) {
+        setCapturedImage(newImage);
+        setLastCapturedPhoto(newImage);
+        triggerShutterFlash();
+      }
       setIsScanning(true);
       setViewfinderStatusVisible(false);
 
-      // Scanning simulation before rendering report
       setTimeout(() => {
         setMorphActive(true);
         setTimeout(() => {
@@ -128,6 +206,7 @@ export default function App() {
           setMorphActive(false);
         }, 800);
       }, 1600);
+      // Permanent report display: only resets when a new photo is sent via the phone
     };
 
     connectDisplaySocket();
@@ -147,7 +226,7 @@ export default function App() {
     };
   }, [isDisplay]);
 
-  // Wire video element source to current media stream
+  // Wire video element source to media stream
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -160,6 +239,11 @@ export default function App() {
       reportRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [report]);
+
+  const triggerShutterFlash = () => {
+    setFlashActive(true);
+    setTimeout(() => setFlashActive(false), 450);
+  };
 
   const startCamera = async () => {
     setReport(null);
@@ -204,14 +288,16 @@ export default function App() {
     canvas.height = h;
     const ctx = canvas.getContext("2d");
 
-    // Mirror image for a natural looking preview
+    // Mirror image for a natural self-facing preview
     ctx.translate(w, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0, w, h);
 
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setCapturedImage(dataUrl);
+    setLastCapturedPhoto(dataUrl);
 
+    triggerShutterFlash();
     stopCamera();
     setIsScanning(true);
     setError(null);
@@ -243,6 +329,10 @@ export default function App() {
       console.error("Analyze request failed:", err);
       setError(err.message || "Something went wrong. Please try again.");
       setIsScanning(false);
+    } finally {
+      if (!success) {
+        setIsScanning(false);
+      }
     }
   };
 
@@ -250,10 +340,13 @@ export default function App() {
     startCamera();
   };
 
+
+
   return (
     <>
       <div className={`ui-morph-shimmer ${morphActive ? "active" : ""}`} id="uiMorphShimmer" aria-hidden="true"></div>
       <div className="grid-overlay" aria-hidden="true"></div>
+
       <div id="skinBackdrop" aria-hidden="true">
         <svg className="dry-cracks-svg" width="100%" height="100%">
           <defs>
@@ -302,9 +395,43 @@ export default function App() {
         </svg>
       </div>
 
+      <div className="bubble-field" aria-hidden="true">
+        <span className="bubble b1"></span>
+        <span className="bubble b2"></span>
+        <span className="bubble b3"></span>
+        <span className="bubble b4"></span>
+        <span className="bubble b5"></span>
+        <span className="bubble b6"></span>
+        <span className="bubble b7"></span>
+        <span className="bubble b8"></span>
+        <span className="bubble b9"></span>
+        <span className="bubble b10"></span>
+        <span className="bubble b11"></span>
+        <span className="bubble b12"></span>
+        <span className="bubble b13"></span>
+        <span className="soap-wrap sw1"><span className="soap-bar"></span></span>
+        <span className="soap-wrap sw2"><span class="soap-bar"></span></span>
+      </div>
+
       <header className="site-header">
         <div className="eyebrow">AI · Skin Analysis</div>
-        <h1 className="logo">Meloniq</h1>
+        <div className="meloniq-brand">
+          <h1 className="meloniq-wordmark">
+            <span>Mel</span>
+            <svg className="meloniq-o-mark" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="o">
+              {/* Outer circle frame */}
+              <circle cx="17" cy="19" r="14" stroke="#434E3F" strokeWidth="2.2" />
+              {/* Arch 1 (outer arch inside o) */}
+              <path d="M 8.5 24.5 A 8.5 8.5 0 0 1 25.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+              {/* Arch 2 (middle arch inside o) */}
+              <path d="M 11.5 24.5 A 5.5 5.5 0 0 1 22.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+              {/* Arch 3 (inner arch inside o) */}
+              <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 19.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            <span>niq</span>
+          </h1>
+          <div className="brand-underline"></div>
+        </div>
         <p className="tagline">Point your camera at your face. Meloniq reads the surface — oil, texture, tone — and hands back a plain-language skin report.</p>
       </header>
 
@@ -312,7 +439,7 @@ export default function App() {
         {/* ================= SCAN PANEL ================= */}
         {!error && (
           <section className="scan-panel" id="scanPanel">
-            <div className="viewfinder" id="viewfinder">
+            <div className={`viewfinder ${flashActive ? "flash" : ""}`} id="viewfinder">
               {stream && !capturedImage && (
                 <video 
                   ref={videoRef} 
@@ -377,7 +504,7 @@ export default function App() {
 
         {/* ================= REPORT PANEL ================= */}
         {report && !error && (
-          <section className="report-panel" id="reportPanel" ref={reportRef}>
+          <section className={`report-panel ${revealActive ? "reveal" : ""}`} id="reportPanel" ref={reportRef}>
             <div className="report-head">
               <div>
                 <div className="eyebrow">Report</div>
@@ -402,7 +529,7 @@ export default function App() {
                 <div 
                   key={index}
                   className="observation" 
-                  style={{ animationDelay: `${0.35 + index * 0.08}s` }}
+                  style={{ animationDelay: `${0.32 + index * 0.07}s` }}
                 >
                   <span className="label">{obs.label || ""}</span>
                   <span className="detail">{obs.detail || ""}</span>
@@ -416,7 +543,7 @@ export default function App() {
                 {(report.care_tips || []).map((tip, index) => (
                   <li 
                     key={index}
-                    style={{ animationDelay: `${0.5 + index * 0.08}s` }}
+                    style={{ animationDelay: `${0.68 + index * 0.06}s` }}
                   >
                     {tip}
                   </li>
@@ -429,6 +556,20 @@ export default function App() {
                 {report.caveats}
               </p>
             )}
+
+            <button 
+              className="pdf-btn" 
+              id="pdfBtn" 
+              type="button"
+              disabled={isExportingPdf}
+              onClick={downloadReportAsPDF}
+            >
+              <svg className="pdf-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 14.5v1A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5v-1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{isExportingPdf ? "Preparing PDF…" : "Download as PDF"}</span>
+            </button>
           </section>
         )}
 
@@ -446,6 +587,86 @@ export default function App() {
       <footer className="site-footer">
         <p>Analysis is generated by an AI model for general cosmetic insight only. It is not a medical diagnosis — see a dermatologist for skin concerns. Photos are sent to the OpenAI API for this single analysis and are not stored by this app.</p>
       </footer>
+
+      {/* ================= DEDICATED A4 PRINT/EXPORT TEMPLATE ================= */}
+      {report && (
+        <div className="pdf-export-template-container" aria-hidden="true">
+          <div ref={pdfTemplateRef} className="pdf-export-template">
+            <div>
+              {/* 1. Letterhead Header */}
+              <div className="pdf-header">
+                <div className="pdf-brand">
+                  <div className="pdf-wordmark">
+                    <span>Mel</span>
+                    <svg className="pdf-o-mark" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="17" cy="19" r="14" stroke="#434E3F" strokeWidth="2.2" />
+                      <path d="M 8.5 24.5 A 8.5 8.5 0 0 1 25.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="M 11.5 24.5 A 5.5 5.5 0 0 1 22.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 18.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                    <span>niq</span>
+                  </div>
+                  <div className="pdf-subhead">AI Skin Analysis Report</div>
+                </div>
+                <div className="pdf-meta">
+                  <div className="pdf-meta-title">CONFIDENTIAL COSMETIC REPORT</div>
+                  <div>Date: {new Date().toISOString().split("T")[0]}</div>
+                  <div>Doc ID: MLQ-78291</div>
+                </div>
+              </div>
+
+              {/* 2. Overview Section with Compact Photo Thumbnail */}
+              <div className="pdf-overview">
+                {lastCapturedPhoto && (
+                  <div className="pdf-photo-wrapper">
+                    <img className="pdf-photo" src={lastCapturedPhoto} alt="Captured portrait" />
+                  </div>
+                )}
+                <div className="pdf-summary-block">
+                  <div className="pdf-eyebrow">Cosmetic Skin Type Evaluation</div>
+                  <h2 className="pdf-skin-heading">
+                    {report.skin_type === "unclear" ? "No Clear Read" : `${report.skin_type} skin`}
+                  </h2>
+                  <div className="pdf-badge">Confidence: {report.confidence || "Medium"}</div>
+                  <p className="pdf-summary-text">{report.summary || ""}</p>
+                </div>
+              </div>
+
+              {/* 3. 4-Metric Observations Grid */}
+              <div className="pdf-section-heading">Detailed Skin Metric Observations</div>
+              <div className="pdf-grid">
+                {(report.observations || []).map((obs, i) => (
+                  <div key={i} className="pdf-card">
+                    <div className="pdf-card-label">{obs.label || ""}</div>
+                    <div className="pdf-card-detail">{obs.detail || ""}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 4. Care Notes / Recommendations */}
+              <div className="pdf-section-heading">Care Notes & Daily Regimen</div>
+              <ul className="pdf-tips-list">
+                {(report.care_tips || []).map((tip, i) => (
+                  <li key={i} className="pdf-tip-item">{tip}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 5. Caveats & Footer */}
+            <div>
+              {report.caveats && (
+                <div className="pdf-caveats">
+                  {report.caveats}
+                </div>
+              )}
+              <div className="pdf-footer">
+                <span>Meloniq Skincare AI • www.meloniq.ai • Cosmetic Information Only</span>
+                <span>Page 1 of 1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

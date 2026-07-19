@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<<<<<<< HEAD
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Meloniq — AI Skin Scan</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumen — AI Skin Scan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:wght@500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -67,30 +66,6 @@
     </svg>
   </div>
 
-  <header class="site-header">
-    <div class="eyebrow">AI · Skin Analysis</div>
-    <h1 class="logo">Meloniq</h1>
-    <p class="tagline">Point your camera at your face. Meloniq reads the surface — oil, texture, tone — and hands back a plain-language skin report.</p>
-  </header>
-
-  <main class="stage">
-
-=======
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lumen — AI Skin Scan</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:wght@500;600&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-
-<body>
-  <div class="grid-overlay" aria-hidden="true"></div>
   <div class="bubble-field" aria-hidden="true">
     <span class="bubble b1"></span>
     <span class="bubble b2"></span>
@@ -108,21 +83,20 @@
     <span class="soap-wrap sw1"><span class="soap-bar"></span></span>
     <span class="soap-wrap sw2"><span class="soap-bar"></span></span>
   </div>
+
   <header class="site-header">
     <div class="eyebrow">AI · Skin Analysis</div>
     <h1 class="logo">Lumen</h1>
-    <p class="tagline">Point your camera at your face. Lumen reads the surface — oil, texture, tone — and hands back a
-      plain-language skin report.</p>
+    <p class="tagline">Point your camera at your face. Lumen reads the surface — oil, texture, tone — and hands back a plain-language skin report.</p>
   </header>
+
   <main class="stage">
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
     <!-- ================= SCAN PANEL ================= -->
     <section class="scan-panel" id="scanPanel">
       <div class="viewfinder" id="viewfinder">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas" hidden></canvas>
         <img id="frozenFrame" class="frozen-frame" hidden alt="Captured photo" />
-<<<<<<< HEAD
 
         <svg class="face-guide" viewBox="0 0 300 300" aria-hidden="true">
           <ellipse cx="150" cy="150" rx="88" ry="112" />
@@ -130,25 +104,14 @@
 
         <div class="scan-line" id="scanLine" hidden></div>
 
-=======
-        <svg class="face-guide" viewBox="0 0 300 300" aria-hidden="true">
-          <ellipse cx="150" cy="150" rx="88" ry="112" />
-        </svg>
-        <div class="scan-line" id="scanLine" hidden></div>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
         <div class="corner tl"></div>
         <div class="corner tr"></div>
         <div class="corner bl"></div>
         <div class="corner br"></div>
-<<<<<<< HEAD
 
         <p class="viewfinder-status" id="viewfinderStatus">Requesting camera access…</p>
       </div>
 
-=======
-        <p class="viewfinder-status" id="viewfinderStatus">Requesting camera access…</p>
-      </div>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
       <div class="controls">
         <button class="btn btn-primary" id="captureBtn" disabled>
           <span class="btn-dot"></span>
@@ -156,20 +119,12 @@
         </button>
         <button class="btn btn-ghost" id="retryBtn" hidden>Scan again</button>
       </div>
-<<<<<<< HEAD
 
       <p class="hint" id="hint">Face the camera directly in even, natural light for the most accurate read.</p>
     </section>
 
     <!-- ================= REPORT PANEL ================= -->
     <section class="report-panel" id="reportPanel" hidden>
-
-=======
-      <p class="hint" id="hint">Face the camera directly in even, natural light for the most accurate read.</p>
-    </section>
-    <!-- ================= REPORT PANEL ================= -->
-    <section class="report-panel" id="reportPanel" hidden>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
       <div class="report-head">
         <div>
           <div class="eyebrow">Report</div>
@@ -180,44 +135,31 @@
           <span class="confidence-value" id="confidenceValue">—</span>
         </div>
       </div>
-<<<<<<< HEAD
 
       <p class="summary" id="summaryText"></p>
 
       <div class="observations" id="observations"></div>
 
-=======
-      <p class="summary" id="summaryText"></p>
-      <div class="observations" id="observations"></div>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
       <div class="care-tips">
         <h3>Care notes</h3>
         <ul id="careTipsList"></ul>
       </div>
-<<<<<<< HEAD
 
-      <p class="caveats" id="caveatsText"></p>
-    </section>
-
-=======
       <p class="caveats" id="caveatsText"></p>
       <button class="pdf-btn" id="pdfBtn" type="button" hidden>
         <svg class="pdf-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-            stroke-linejoin="round" />
-          <path d="M4 14.5v1A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5v-1" stroke="currentColor" stroke-width="1.6"
-            stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M4 14.5v1A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>Download as PDF</span>
       </button>
     </section>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
+
     <!-- ================= ERROR PANEL ================= -->
     <section class="error-panel" id="errorPanel" hidden>
       <p id="errorText"></p>
       <button class="btn btn-ghost" id="errorRetryBtn">Try again</button>
     </section>
-<<<<<<< HEAD
 
   </main>
 
@@ -225,20 +167,8 @@
     <p>Analysis is generated by an AI model for general cosmetic insight only. It is not a medical diagnosis — see a dermatologist for skin concerns. Photos are sent to the OpenAI API for this single analysis and are not stored by this app.</p>
   </footer>
 
-  <script src="app.js"></script>
-</body>
-</html>
-=======
-  </main>
-  <footer class="site-footer">
-    <p>Analysis is generated by an AI model for general cosmetic insight only. It is not a medical diagnosis — see a
-      dermatologist for skin concerns. Photos are sent to the OpenAI API for this single analysis and are not stored by
-      this app.</p>
-  </footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
-
 </html>
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273

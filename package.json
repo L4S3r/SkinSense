@@ -13,8 +13,11 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "openai": "^4.68.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

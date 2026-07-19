@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # CLAUDE.md — context for coding agents
-=======
-# context for coding agents
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 
 Read this first. It captures the non-obvious facts about this repo so you don't
 have to rediscover them. For a full narrative tour see `WALKTHROUGH.md`; for
@@ -43,6 +39,7 @@ that way.
   booth LAN is plain HTTP). Not a security bug to "fix" for this use case.
 - **No auth / no rate limiting** on `/api/analyze` or the WebSocket. Acceptable
   for a closed booth LAN only. Flag it, add auth+HTTPS, before any public deploy.
+- **React in `/src/` is mandatory.** All web app features and UI updates must be made in `src/`. `public_vanilla/` is legacy backup/reference only — do not build features there.
 - **No image storage by design.** Don't add logging/persistence of photos
   without explicit ask.
 
@@ -108,6 +105,8 @@ WebSocket broadcast round-trip against a valid key.
 
 ## Conventions / expectations
 
+- **React Only (`/src`)**: All web frontend feature work, UI updates, and bug fixes MUST be implemented exclusively in the React codebase under `/src/` (`src/App.jsx`, `src/App.css`, etc.).
+- **`public_vanilla/` is Legacy**: The `public_vanilla/` directory is kept for historical reference only. Do NOT make new changes, add features, or write code in `public_vanilla/`.
 - Frontend inserts model output using React state bindings, safeguarding against raw HTML injection.
 - Flutter: front camera default (selfie face-scan), front preview mirrored,
   rear preview un-mirrored. `flutter analyze` clean is the bar.

@@ -1,28 +1,18 @@
 // =====================================================
-<<<<<<< HEAD
-// Meloniq — camera capture + report rendering
-=======
 // Lumen — camera capture + report rendering
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 // =====================================================
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const frozenFrame = document.getElementById("frozenFrame");
 const scanLine = document.getElementById("scanLine");
-<<<<<<< HEAD
-=======
 const viewfinder = document.getElementById("viewfinder");
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 const viewfinderStatus = document.getElementById("viewfinderStatus");
 
 const captureBtn = document.getElementById("captureBtn");
 const retryBtn = document.getElementById("retryBtn");
 const errorRetryBtn = document.getElementById("errorRetryBtn");
-<<<<<<< HEAD
-=======
 const pdfBtn = document.getElementById("pdfBtn");
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 const hint = document.getElementById("hint");
 
 const reportPanel = document.getElementById("reportPanel");
@@ -30,10 +20,7 @@ const errorPanel = document.getElementById("errorPanel");
 const errorText = document.getElementById("errorText");
 
 let stream = null;
-<<<<<<< HEAD
-=======
 let lastCapturedPhoto = null; // natural-orientation dataURL of the most recent shot, used by the PDF export
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 
 // ------------------- Camera -------------------
 async function startCamera() {
@@ -67,19 +54,13 @@ function stopCamera() {
 }
 
 function resetToScanState() {
-<<<<<<< HEAD
   document.body.removeAttribute("data-skin-type");
   document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear", "is-scanning");
-  reportPanel.hidden = true;
-  errorPanel.hidden = true;
-  retryBtn.hidden = true;
-=======
   reportPanel.hidden = true;
   reportPanel.classList.remove("reveal");
   errorPanel.hidden = true;
   retryBtn.hidden = true;
   pdfBtn.hidden = true;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   scanLine.hidden = true;
   hint.hidden = false;
   captureBtn.hidden = false;
@@ -105,14 +86,13 @@ async function captureAndAnalyze() {
   ctx.drawImage(video, 0, 0, w, h);
 
   const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-<<<<<<< HEAD
-=======
   lastCapturedPhoto = dataUrl;
 
   // Quick shutter feedback right as the photo is taken.
-  viewfinder.classList.add("flash");
-  setTimeout(() => viewfinder.classList.remove("flash"), 450);
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
+  if (viewfinder) {
+    viewfinder.classList.add("flash");
+    setTimeout(() => viewfinder.classList.remove("flash"), 450);
+  }
 
   // Freeze the viewfinder on the captured photo and stop the live stream.
   frozenFrame.src = dataUrl;
@@ -121,19 +101,13 @@ async function captureAndAnalyze() {
   stopCamera();
 
   // Enter "scanning" state.
-<<<<<<< HEAD
   document.body.classList.add("is-scanning");
-=======
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   scanLine.hidden = false;
   captureBtn.disabled = true;
   captureBtn.textContent = "Analyzing…";
   hint.hidden = true;
 
-<<<<<<< HEAD
   let success = false;
-=======
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   try {
     const res = await fetch("/api/analyze", {
       method: "POST",
@@ -147,7 +121,6 @@ async function captureAndAnalyze() {
       throw new Error(payload.error || "The analysis failed. Please try again.");
     }
 
-<<<<<<< HEAD
     success = true;
     const morphShimmer = document.getElementById("uiMorphShimmer");
     if (morphShimmer) {
@@ -165,52 +138,37 @@ async function captureAndAnalyze() {
       document.body.classList.remove("is-scanning");
       renderReport(payload.report);
     }
-=======
-    renderReport(payload.report);
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   } catch (err) {
     console.error("Analyze request failed:", err);
     showError(err.message || "Something went wrong. Please try again.");
   } finally {
-<<<<<<< HEAD
     if (!success) {
       scanLine.hidden = true;
       document.body.classList.remove("is-scanning");
     }
-=======
-    scanLine.hidden = true;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   }
 }
 
 // ------------------- Rendering -------------------
 function renderReport(report) {
-<<<<<<< HEAD
-  document.body.dataset.skinType = report.skin_type || "unclear";
+  const skinType = report.skin_type || "unclear";
+  document.body.dataset.skinType = skinType;
   document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear");
-  if (report.skin_type && report.skin_type !== "unclear") {
-    document.body.classList.add(`bg-${report.skin_type}`);
+  if (skinType !== "unclear") {
+    document.body.classList.add(`bg-${skinType}`);
   }
-  captureBtn.hidden = true;
-  retryBtn.hidden = false;
-  errorPanel.hidden = true;
-  reportPanel.hidden = false;
 
-=======
   captureBtn.hidden = true;
   retryBtn.hidden = false;
   pdfBtn.hidden = false;
   errorPanel.hidden = true;
   reportPanel.hidden = false;
 
-  // Restart the reveal sequence on every render — including repeat scans,
-  // where the element is already in the DOM and wouldn't otherwise replay.
+  // Restart the reveal sequence on every render
   reportPanel.classList.remove("reveal");
   void reportPanel.offsetWidth; // force a reflow so the animation restarts
   reportPanel.classList.add("reveal");
 
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
-  const skinType = report.skin_type || "unclear";
   document.getElementById("skinTypeHeading").textContent =
     skinType === "unclear" ? "No clear read" : `${skinType} skin`;
   document.getElementById("confidenceValue").textContent = report.confidence || "—";
@@ -218,17 +176,10 @@ function renderReport(report) {
 
   const obsContainer = document.getElementById("observations");
   obsContainer.innerHTML = "";
-<<<<<<< HEAD
-  (report.observations || []).forEach((obs, index) => {
-    const card = document.createElement("div");
-    card.className = "observation";
-    card.style.animationDelay = `${0.35 + index * 0.08}s`;
-=======
   (report.observations || []).forEach((obs, i) => {
     const card = document.createElement("div");
     card.className = "observation";
     card.style.animationDelay = `${0.32 + i * 0.07}s`;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
     const label = document.createElement("span");
     label.className = "label";
     label.textContent = obs.label || "";
@@ -242,17 +193,10 @@ function renderReport(report) {
 
   const tipsList = document.getElementById("careTipsList");
   tipsList.innerHTML = "";
-<<<<<<< HEAD
-  (report.care_tips || []).forEach((tip, index) => {
-    const li = document.createElement("li");
-    li.textContent = tip;
-    li.style.animationDelay = `${0.5 + index * 0.08}s`;
-=======
   (report.care_tips || []).forEach((tip, i) => {
     const li = document.createElement("li");
     li.textContent = tip;
     li.style.animationDelay = `${0.68 + i * 0.06}s`;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
     tipsList.appendChild(li);
   });
 
@@ -262,17 +206,12 @@ function renderReport(report) {
 }
 
 function showError(message) {
-<<<<<<< HEAD
   document.body.classList.remove("is-scanning");
-=======
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   reportPanel.hidden = true;
   errorPanel.hidden = false;
   errorText.textContent = message;
   captureBtn.hidden = true;
   retryBtn.hidden = true;
-<<<<<<< HEAD
-=======
   pdfBtn.hidden = true;
 }
 
@@ -310,9 +249,6 @@ async function downloadReportAsPDF() {
   label.textContent = "Preparing PDF…";
 
   try {
-    // Render the styled report card exactly as shown on screen. The glow
-    // behind the card is hidden for the capture — canvas rendering of
-    // CSS `filter: blur()` is inconsistent across browsers.
     reportPanel.classList.add("exporting");
     const reportCanvas = await html2canvas(reportPanel, {
       backgroundColor: "#F7ECDD",
@@ -321,9 +257,7 @@ async function downloadReportAsPDF() {
     });
     reportPanel.classList.remove("exporting");
 
-    // Stack the selfie (if we have one) above the report card on a single
-    // canvas, so the export reads as one keepsake image rather than two.
-    const padding = 64; // 32css px at the 2x capture scale
+    const padding = 64;
     let photoImg = null;
     if (lastCapturedPhoto) {
       photoImg = await loadImage(lastCapturedPhoto);
@@ -376,27 +310,19 @@ async function downloadReportAsPDF() {
     pdfBtn.disabled = false;
     label.textContent = originalLabel;
   }
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 }
 
 // ------------------- Booth display mode -------------------
-// When opened as `?display`, this screen doesn't capture anything itself.
-// It connects to the backend over a WebSocket and renders reports pushed
-// from the Flutter phone app — the big screen the crowd watches.
 const IS_DISPLAY = new URLSearchParams(location.search).has("display");
 
 function enterDisplayMode() {
-  // No local camera on the booth screen — stop it and reshape the UI.
   stopCamera();
   video.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;
   captureBtn.hidden = true;
   retryBtn.hidden = true;
-<<<<<<< HEAD
-=======
   pdfBtn.hidden = true;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   hint.hidden = true;
   reportPanel.hidden = true;
   errorPanel.hidden = true;
@@ -406,11 +332,8 @@ function enterDisplayMode() {
 }
 
 function showIdle(message) {
-<<<<<<< HEAD
   document.body.removeAttribute("data-skin-type");
   document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear", "is-scanning");
-=======
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   reportPanel.hidden = true;
   frozenFrame.hidden = true;
   scanLine.hidden = true;
@@ -422,15 +345,11 @@ function connectDisplaySocket() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const ws = new WebSocket(`${proto}://${location.host}/ws/display`);
 
-<<<<<<< HEAD
   ws.addEventListener("open", () => {
     if (reportPanel.hidden) {
       showIdle("Ready — waiting for the next scan…");
     }
   });
-=======
-  ws.addEventListener("open", () => showIdle("Ready — waiting for the next scan…"));
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 
   ws.addEventListener("message", (event) => {
     let msg;
@@ -440,56 +359,45 @@ function connectDisplaySocket() {
       return;
     }
     if (msg.type === "hello") {
-<<<<<<< HEAD
       if (reportPanel.hidden) {
         showIdle("Ready — waiting for the next scan…");
       }
-=======
-      showIdle("Ready — waiting for the next scan…");
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
     } else if (msg.type === "report") {
       showDisplayReport(msg.report, msg.image);
     }
   });
 
-  // Auto-reconnect so the booth screen survives a server restart / Wi-Fi blip.
   ws.addEventListener("close", () => {
-<<<<<<< HEAD
     if (reportPanel.hidden) {
       showIdle("Reconnecting…");
     }
-=======
-    showIdle("Reconnecting…");
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
     setTimeout(connectDisplaySocket, 2000);
   });
   ws.addEventListener("error", () => ws.close());
 }
 
-<<<<<<< HEAD
+let idleTimer = null;
 function showDisplayReport(report, image) {
+  clearTimeout(idleTimer);
   viewfinderStatus.hidden = true;
   reportPanel.hidden = true;
   window.scrollTo({ top: 0 });
   document.body.removeAttribute("data-skin-type");
   document.body.classList.remove("bg-oily", "bg-dry", "bg-combination", "bg-sensitive", "bg-normal", "bg-unclear");
-=======
-let idleTimer = null;
-function showDisplayReport(report, image) {
-  clearTimeout(idleTimer);
-  viewfinderStatus.hidden = true;
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 
-  // Show the captured photo in the viewfinder frame with a scan sweep,
-  // then render the report using the shared renderer.
   if (image) {
-<<<<<<< HEAD
+    lastCapturedPhoto = image;
     frozenFrame.src = image;
     frozenFrame.hidden = false;
     video.hidden = true;
+    if (viewfinder) {
+      viewfinder.classList.add("flash");
+      setTimeout(() => viewfinder.classList.remove("flash"), 450);
+    }
   }
   document.body.classList.add("is-scanning");
   scanLine.hidden = false;
+
   setTimeout(() => {
     const morphShimmer = document.getElementById("uiMorphShimmer");
     if (morphShimmer) {
@@ -498,8 +406,9 @@ function showDisplayReport(report, image) {
         document.body.classList.remove("is-scanning");
         scanLine.hidden = true;
         renderReport(report);
-        captureBtn.hidden = true; // renderReport unhides some controls; keep them off
+        captureBtn.hidden = true;
         retryBtn.hidden = true;
+        pdfBtn.hidden = false;
       }, 200);
       setTimeout(() => {
         morphShimmer.classList.remove("active");
@@ -510,28 +419,11 @@ function showDisplayReport(report, image) {
       renderReport(report);
       captureBtn.hidden = true;
       retryBtn.hidden = true;
+      pdfBtn.hidden = false;
     }
   }, 1600);
-=======
-    lastCapturedPhoto = image;
-    frozenFrame.src = image;
-    frozenFrame.hidden = false;
-    video.hidden = true;
-    viewfinder.classList.add("flash");
-    setTimeout(() => viewfinder.classList.remove("flash"), 450);
-  }
-  scanLine.hidden = false;
-  setTimeout(() => {
-    scanLine.hidden = true;
-    renderReport(report);
-    captureBtn.hidden = true; // renderReport unhides some controls; keep them off
-    retryBtn.hidden = true;
-    pdfBtn.hidden = true; // the booth screen is for viewing, not for saving a copy
-  }, 1600);
 
-  // Return to the idle "waiting" state so the booth is ready for the next person.
-  idleTimer = setTimeout(() => showIdle("Ready — waiting for the next scan…"), 30000);
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
+  // Permanent report display: only resets when a new photo is sent via the phone
 }
 
 // ------------------- Events / boot -------------------
@@ -541,9 +433,6 @@ if (IS_DISPLAY) {
   captureBtn.addEventListener("click", captureAndAnalyze);
   retryBtn.addEventListener("click", startCamera);
   errorRetryBtn.addEventListener("click", startCamera);
-<<<<<<< HEAD
-=======
   pdfBtn.addEventListener("click", downloadReportAsPDF);
->>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
   startCamera();
 }
