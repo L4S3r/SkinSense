@@ -1,7 +1,7 @@
-# Lumen Capture
+# Meloniq Capture
 
-The capture station for **Lumen** booth mode. This Flutter app runs on a phone,
-takes a face photo with the front (or rear) camera, and POSTs it to the Lumen
+The capture station for **Meloniq** booth mode. This Flutter app runs on a phone,
+takes a face photo with the front (or rear) camera, and POSTs it to the Meloniq
 backend at `http://<host>/api/analyze`. The backend runs the skin-type analysis
 and broadcasts the report to any `?display` screen over WebSocket.
 
@@ -12,7 +12,7 @@ same LAN — point the app at the backend's LAN IP, not `localhost`.
 ## Prerequisites (both platforms)
 
 - Flutter 3.x (`flutter doctor` should be green)
-- The Lumen backend running and reachable on your LAN (`npm start` in the repo root)
+- The Meloniq backend running and reachable on your LAN (`npm start` in the repo root)
 
 ```bash
 cd mobile
@@ -76,8 +76,8 @@ flutter run
 2. Open `ios/Runner.xcworkspace` in Xcode (the `.xcworkspace`, not `.xcodeproj`).
 3. Select the **Runner** target → **Signing & Capabilities** → set **Team** to
    your Apple ID. A free Apple ID works for running on your own device.
-4. If Xcode says the bundle ID `com.lumen.lumenCapture` is taken, change it to
-   something unique (e.g. `com.lumen.lumenCapture.yourname`).
+4. If Xcode says the bundle ID `com.meloniq.meloniqCapture` is taken, change it to
+   something unique (e.g. `com.meloniq.meloniqCapture.yourname`).
 5. `flutter run` (or the Run button in Xcode).
 6. First launch: on the iPhone, **Settings → General → VPN & Device Management**
    → trust your developer certificate, then relaunch.

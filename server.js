@@ -210,7 +210,7 @@ const PORT = process.env.PORT || 3000;
 // Listen on 0.0.0.0 so the Flutter phone can reach the server over the LAN
 // (not just localhost). The booth screen opens `?display` on the same host.
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n✨ Lumen Skin Analyzer running`);
+  console.log(`\n✨ Meloniq Skin Analyzer running`);
   console.log(`   Booth screen : http://localhost:${PORT}/?display`);
   console.log(`   Phone posts  : http://<this-laptop-LAN-ip>:${PORT}/api/analyze\n`);
 });

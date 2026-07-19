@@ -1,5 +1,5 @@
 # =====================================================
-# Lumen — booth connect helper
+# Meloniq — booth connect helper
 # Sets up `adb reverse` so the phone's localhost:3000 tunnels to this
 # laptop's server, satisfying the browser's secure-origin requirement
 # for camera access. Optionally starts the server too.

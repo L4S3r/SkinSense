@@ -1,5 +1,5 @@
 // =====================================================
-// Lumen — camera capture + report rendering
+// Meloniq — camera capture + report rendering
 // =====================================================
 
 const video = document.getElementById("video");
@@ -301,7 +301,7 @@ async function downloadReportAsPDF() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    pdf.save(`lumen-${skinType || "skin-report"}-${Date.now()}.pdf`);
+    pdf.save(`meloniq-${skinType || "skin-report"}-${Date.now()}.pdf`);
   } catch (err) {
     console.error("PDF export failed:", err);
     alert("Couldn't generate the PDF. Please try again.");

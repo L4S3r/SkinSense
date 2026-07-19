@@ -6,7 +6,7 @@ setup/booth instructions see `README.md`.
 
 ## What this is
 
-**Lumen** — a face-photo skin-type analyzer. A camera captures a frame, the
+**Meloniq** — a face-photo skin-type analyzer. A camera captures a frame, the
 backend sends it to a **Google Gemini** vision model, and a structured
 skin-type report comes back (skin type, confidence, observations, care tips).
 

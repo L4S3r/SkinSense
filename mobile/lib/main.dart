@@ -1,6 +1,6 @@
 // =====================================================
-// Lumen Capture — booth phone app
-// Front-camera capture station. Takes a photo and POSTs it to the Lumen
+// Meloniq Capture — booth phone app
+// Front-camera capture station. Takes a photo and POSTs it to the Meloniq
 // backend, which analyzes it and pushes the report to the booth screen.
 // This phone only confirms "sent" — the report shows on the big screen.
 // =====================================================
@@ -30,16 +30,16 @@ Future<void> main() async {
   } catch (_) {
     _cameras = <CameraDescription>[];
   }
-  runApp(const LumenCaptureApp());
+  runApp(const MeloniqCaptureApp());
 }
 
-class LumenCaptureApp extends StatelessWidget {
-  const LumenCaptureApp({super.key});
+class MeloniqCaptureApp extends StatelessWidget {
+  const MeloniqCaptureApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Lumen Capture',
+      title: 'Meloniq Capture',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -239,7 +239,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: _bg,
-        title: const Text('Lumen Capture', style: TextStyle(color: _text, fontSize: 18)),
+        title: const Text('Meloniq Capture', style: TextStyle(color: _text, fontSize: 18)),
         actions: [
           TextButton.icon(
             onPressed: _editHost,
