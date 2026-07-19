@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import "./App.css";
+import brandLogo from "./assets/logo.webp";
 
 export default function App() {
   const [isDisplay] = useState(() => {
@@ -441,21 +442,7 @@ export default function App() {
       <header className="site-header">
         <div className="eyebrow">AI · Skin Analysis</div>
         <div className="meloniq-brand">
-          <h1 className="meloniq-wordmark">
-            <span>Mel</span>
-            <svg className="meloniq-o-mark" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="o">
-              {/* Outer circle frame */}
-              <circle cx="17" cy="19" r="14" stroke="#434E3F" strokeWidth="2.2" />
-              {/* Arch 1 (outer arch inside o) */}
-              <path d="M 8.5 24.5 A 8.5 8.5 0 0 1 25.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-              {/* Arch 2 (middle arch inside o) */}
-              <path d="M 11.5 24.5 A 5.5 5.5 0 0 1 22.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-              {/* Arch 3 (inner arch inside o) */}
-              <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 18.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            <span>niq</span>
-          </h1>
-          <div className="brand-underline"></div>
+          <img src={brandLogo} alt="Meloniq Logo" className="meloniq-brand-logo" />
         </div>
         <p className="tagline">Point your camera at your face. Meloniq reads the surface — oil, texture, tone — and hands back a plain-language skin report.</p>
       </header>
@@ -621,16 +608,7 @@ export default function App() {
               {/* 1. Letterhead Header */}
               <div className="pdf-header">
                 <div className="pdf-brand">
-                  <div className="pdf-wordmark">
-                    <span>Mel</span>
-                    <svg className="pdf-o-mark" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="17" cy="19" r="14" stroke="#434E3F" strokeWidth="2.2" />
-                      <path d="M 8.5 24.5 A 8.5 8.5 0 0 1 25.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-                      <path d="M 11.5 24.5 A 5.5 5.5 0 0 1 22.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-                      <path d="M 14.5 24.5 A 2.5 2.5 0 0 1 18.5 24.5" stroke="#434E3F" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                    <span>niq</span>
-                  </div>
+                  <img src={brandLogo} alt="Meloniq Logo" className="pdf-brand-logo" crossOrigin="anonymous" />
                   <div className="pdf-subhead">AI Skin Analysis Report</div>
                 </div>
                 <div className="pdf-meta">

@@ -103,6 +103,9 @@ flutter pub get
 flutter analyze               # MUST be clean before you call Flutter work done
 flutter run                   # onto a connected Android device
 flutter build apk --debug     # ~9 min first build; the camera KGP warning is benign
+
+# iOS builds via Codemagic CI/CD (codemagic.yaml configured in root & mobile/)
+# Workflows: ios-release, ios-debug, android-release
 ```
 
 There is no automated JS test suite. Flutter has one smoke test

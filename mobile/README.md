@@ -65,11 +65,18 @@ flutter build apk --debug  # ~9 min first build; the camera KGP warning is benig
 Cleartext HTTP over the LAN is enabled via `usesCleartextTraffic="true"` in the
 Android manifest.
 
-## Run on iOS
+## Building for iOS via Codemagic CI/CD (No Mac required)
 
-iOS builds require **macOS + Xcode** — there is no way to build iOS from Windows
-or Linux. The `ios/` folder is already in the repo, so you don't need to
-regenerate it.
+If you are developing on **Windows** or **Linux**, you can build iOS `.ipa` / `.app` packages automatically using **Codemagic** with the included `codemagic.yaml`:
+
+1. Connect your repository (GitHub / GitLab / Bitbucket) to [Codemagic](https://codemagic.io/).
+2. Codemagic will automatically detect `codemagic.yaml`.
+3. Choose the **`ios-release`** or **`ios-debug`** workflow and click **Start new build**.
+4. Once completed, download the generated `.ipa` file directly from the Codemagic artifacts tab and install it onto your iPhone using AltServer, Sideloadly, TestFlight, or App Store Connect.
+
+## Run on iOS (Local macOS Build)
+
+iOS local builds require **macOS + Xcode**. The `ios/` folder is already configured in the repo.
 
 ### 1. Install the toolchain (macOS)
 

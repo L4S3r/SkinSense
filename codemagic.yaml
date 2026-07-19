@@ -1,0 +1,117 @@
+# =====================================================
+# Codemagic CI/CD Configuration for Meloniq Capture
+# Builds iOS (.ipa / .app) and Android (.apk) packages
+# =====================================================
+
+workflows:
+  # -----------------------------------------------------
+  # 1. iOS Release Build (IPA / TestFlight / App Store)
+  # -----------------------------------------------------
+  ios-release:
+    name: Meloniq Capture - iOS Release Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        # Optional: Define Apple Developer credentials in Codemagic UI under Environment Variables
+        - app_store_credentials
+    scripts:
+      - name: Set up Flutter dependencies
+        script: |
+          cd mobile
+          flutter packages pub get
+
+      - name: Run code analysis & tests
+        script: |
+          cd mobile
+          flutter analyze
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd mobile/ios
+          pod install
+
+      - name: Automatic Code Signing & Build iOS IPA
+        script: |
+          cd mobile
+          # If code signing keys are configured in Codemagic UI:
+          if [ -n "$CM_CERTIFICATE" ]; then
+            keychain initialize
+            app-store-connect fetch-signing-files "$APP_STORE_CONNECT_ISSUER_ID" \
+              --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+              --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+              --create
+            keychain add-certificates
+            xcode-project use-profiles
+            flutter build ipa --release
+          else
+            # Unsigned build fallback for manual signing / ALTServer / Sideloading
+            flutter build ipa --release --no-codesign
+          fi
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+      - mobile/build/ios/iphoneos/*.app
+      - mobile/build/ios/archive/*.xcarchive
+      - mobile/build/ios/Runner.app
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
+
+  # -----------------------------------------------------
+  # 2. iOS Debug / Ad-Hoc Build (Fast test build)
+  # -----------------------------------------------------
+  ios-debug:
+    name: Meloniq Capture - iOS Debug Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up Flutter dependencies
+        script: |
+          cd mobile
+          flutter packages pub get
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd mobile/ios
+          pod install
+
+      - name: Build iOS Debug Application
+        script: |
+          cd mobile
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - mobile/build/ios/iphoneos/*.app
+      - mobile/build/ios/ipa/*.ipa
+
+  # -----------------------------------------------------
+  # 3. Android Release APK Build (Bonus multi-platform)
+  # -----------------------------------------------------
+  android-release:
+    name: Meloniq Capture - Android APK Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+    scripts:
+      - name: Set up Flutter dependencies
+        script: |
+          cd mobile
+          flutter packages pub get
+
+      - name: Build Android APK
+        script: |
+          cd mobile
+          flutter build apk --release
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk

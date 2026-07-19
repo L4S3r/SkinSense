@@ -284,9 +284,9 @@ a:focus-visible {
 .site-header {
   position: relative;
   z-index: 1;
-  max-width: 580px;
+  max-width: 760px;
   text-align: center;
-  padding: 48px 24px 8px;
+  padding: 40px 24px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -298,43 +298,28 @@ a:focus-visible {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--olive-light);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .meloniq-brand {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 14px;
-}
-
-.meloniq-wordmark {
-  display: inline-flex;
-  align-items: baseline;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 48px;
-  letter-spacing: -0.01em;
-  color: var(--olive);
-  line-height: 1;
-  position: relative;
-}
-
-.meloniq-o-mark {
-  display: inline-block;
-  vertical-align: baseline;
-  margin: 0 1px;
-  height: 38px;
-  width: 34px;
-  transform: translateY(4px);
-}
-
-.brand-underline {
+  margin-bottom: 24px;
   width: 100%;
-  height: 1.5px;
-  background: var(--olive);
-  margin-top: 6px;
-  opacity: 0.85;
+}
+
+.meloniq-brand-logo {
+  height: 320px;
+  width: auto;
+  max-width: 90vw;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(67, 78, 63, 0.15));
+  transition: transform 0.3s ease;
+}
+
+.meloniq-brand-logo:hover {
+  transform: scale(1.015);
 }
 
 .tagline {
@@ -1102,22 +1087,11 @@ body.bg-combination #skinBackdrop::after {
   flex-direction: column;
 }
 
-.pdf-wordmark {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 700;
-  font-size: 32px;
-  letter-spacing: -0.01em;
-  color: #434E3F;
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-}
-
-.pdf-o-mark {
-  height: 25px;
-  width: 22px;
-  transform: translateY(3px);
-  margin: 0 1px;
+.pdf-brand-logo {
+  height: 68px;
+  width: auto;
+  max-width: 300px;
+  object-fit: contain;
 }
 
 .pdf-subhead {
