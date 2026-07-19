@@ -16,7 +16,6 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        # Optional: Define Apple Developer credentials in Codemagic UI under Environment Variables
         - app_store_credentials
     scripts:
       - name: Set up Flutter dependencies
@@ -29,15 +28,16 @@ workflows:
           cd mobile
           flutter analyze
 
-      - name: Install CocoaPods dependencies
-        script: |
-          cd mobile/ios
-          pod install
-
-      - name: Automatic Code Signing & Build iOS IPA
+      - name: Initialize CocoaPods & iOS Configuration
         script: |
           cd mobile
-          # If code signing keys are configured in Codemagic UI:
+          flutter build ios --config-only
+          cd ios
+          pod install
+
+      - name: Build iOS IPA
+        script: |
+          cd mobile
           if [ -n "$CM_CERTIFICATE" ]; then
             keychain initialize
             app-store-connect fetch-signing-files "$APP_STORE_CONNECT_ISSUER_ID" \
@@ -56,13 +56,6 @@ workflows:
       - mobile/build/ios/iphoneos/*.app
       - mobile/build/ios/archive/*.xcarchive
       - mobile/build/ios/Runner.app
-    publishing:
-      email:
-        recipients:
-          - user@example.com
-        notify:
-          success: true
-          failure: true
 
   # -----------------------------------------------------
   # 2. iOS Debug / Ad-Hoc Build (Fast test build)
@@ -81,9 +74,11 @@ workflows:
           cd mobile
           flutter packages pub get
 
-      - name: Install CocoaPods dependencies
+      - name: Initialize CocoaPods & iOS Configuration
         script: |
-          cd mobile/ios
+          cd mobile
+          flutter build ios --config-only
+          cd ios
           pod install
 
       - name: Build iOS Debug Application

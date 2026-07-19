@@ -21,8 +21,9 @@ workflows:
         script: |
           flutter analyze
 
-      - name: Install CocoaPods dependencies
+      - name: Initialize CocoaPods & iOS Configuration
         script: |
+          flutter build ios --config-only
           cd ios
           pod install
           cd ..
@@ -48,8 +49,9 @@ workflows:
         script: |
           flutter packages pub get
 
-      - name: Install CocoaPods dependencies
+      - name: Initialize CocoaPods & iOS Configuration
         script: |
+          flutter build ios --config-only
           cd ios
           pod install
           cd ..
