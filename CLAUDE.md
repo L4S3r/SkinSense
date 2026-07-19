@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # CLAUDE.md — context for coding agents
+=======
+# context for coding agents
+>>>>>>> 77f842960483ee3065ca4cb15dc6a6a217af0273
 
 Read this first. It captures the non-obvious facts about this repo so you don't
 have to rediscover them. For a full narrative tour see `WALKTHROUGH.md`; for
