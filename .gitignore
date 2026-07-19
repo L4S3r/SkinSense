@@ -1,0 +1,7 @@
+node_modules/
+OPENAI_API_KEY
+.env
+.DS_Store
+__pycache__/FaceChain.cpython-314.pyc
+.vscode
+dist/

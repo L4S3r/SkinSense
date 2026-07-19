@@ -1,0 +1,1072 @@
+/* =====================================================
+   Lumen — design tokens
+   Palette: deep charcoal ground, coral (skin/warmth) +
+   teal (digital scan) as the two working accents for the
+   live-scan UI. The report itself switches register: a
+   warm cream "printed diagnosis" card that seems to
+   develop out of the dark scanner, echoing a photograph
+   coming to light.
+   ===================================================== */
+:root {
+  --bg: #F7ECDD;
+  --bg-raised: #FBF5EA;
+  --bg-raised-2: #EFE0C9;
+  --border: rgba(51, 41, 32, 0.1);
+  --border-strong: rgba(51, 41, 32, 0.18);
+
+  --coral: #C97A63;
+  --coral-dim: #B97569;
+  --teal: #2E9985;
+  --teal-dim: #3FA893;
+
+  --text: #332920;
+  --text-muted: #7C6A56;
+  --text-faint: #A8977C;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius: 18px;
+
+  /* ---- report card tokens ---- */
+  --report-cream: #F7ECDD;
+  --report-cream-soft: #FBF5EA;
+  --report-card: #EFE0C9;
+  --report-border: #E2CFAF;
+  --report-ink: #332920;
+  --report-heading: #8A5A3E;
+  --report-muted: #7C6A56;
+
+  --font-serif: 'Fraunces', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* faint biometric grid backdrop */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(94, 234, 212, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 234, 212, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, black 0%, transparent 70%);
+}
+
+/* floating droplet/bubble decoration behind the content, evoking the
+   glass water-droplet moodboard: soft translucent circles that drift
+   slowly and continuously */
+.bubble-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.4) 13%, rgba(255, 255, 255, 0.06) 30%, rgba(201, 122, 99, 0.05) 68%, rgba(201, 122, 99, 0.12) 100%);
+  box-shadow:
+    inset -8px -10px 16px rgba(150, 105, 75, 0.18),
+    inset 5px 7px 12px rgba(255, 255, 255, 0.55),
+    0 16px 32px rgba(51, 41, 32, 0.1);
+  border: 1px solid rgba(51, 41, 32, 0.1);
+  opacity: 0.85;
+  animation: bubbleFloat 20s ease-in-out infinite;
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  top: 13%;
+  left: 20%;
+  width: 32%;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  filter: blur(1.5px);
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  bottom: 10%;
+  right: 16%;
+  width: 12%;
+  height: 12%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  filter: blur(1px);
+}
+
+.b1 {
+  width: 120px;
+  height: 120px;
+  left: 4%;
+  top: 10%;
+  animation-duration: 24s;
+}
+
+.b2 {
+  width: 54px;
+  height: 54px;
+  left: 12%;
+  top: 46%;
+  animation-duration: 17s;
+  animation-delay: -3s;
+}
+
+.b3 {
+  width: 82px;
+  height: 82px;
+  left: 3%;
+  top: 72%;
+  animation-duration: 21s;
+  animation-delay: -9s;
+}
+
+.b4 {
+  width: 36px;
+  height: 36px;
+  left: 18%;
+  top: 88%;
+  animation-duration: 14s;
+  animation-delay: -5s;
+}
+
+.b5 {
+  width: 64px;
+  height: 64px;
+  left: 9%;
+  top: 30%;
+  animation-duration: 19s;
+  animation-delay: -12s;
+}
+
+.b6 {
+  width: 108px;
+  height: 108px;
+  right: 5%;
+  top: 16%;
+  animation-duration: 25s;
+  animation-delay: -6s;
+}
+
+.b7 {
+  width: 46px;
+  height: 46px;
+  right: 14%;
+  top: 42%;
+  animation-duration: 15s;
+  animation-delay: -2s;
+}
+
+.b8 {
+  width: 92px;
+  height: 92px;
+  right: 4%;
+  top: 66%;
+  animation-duration: 22s;
+  animation-delay: -10s;
+}
+
+.b9 {
+  width: 34px;
+  height: 34px;
+  right: 20%;
+  top: 85%;
+  animation-duration: 13s;
+  animation-delay: -7s;
+}
+
+.b10 {
+  width: 60px;
+  height: 60px;
+  right: 10%;
+  top: 90%;
+  animation-duration: 18s;
+  animation-delay: -14s;
+}
+
+.b11 {
+  width: 30px;
+  height: 30px;
+  left: 32%;
+  top: 4%;
+  animation-duration: 16s;
+  animation-delay: -4s;
+}
+
+.b12 {
+  width: 26px;
+  height: 26px;
+  right: 30%;
+  top: 6%;
+  animation-duration: 15s;
+  animation-delay: -10s;
+}
+
+.b13 {
+  width: 22px;
+  height: 22px;
+  left: 27%;
+  top: 94%;
+  animation-duration: 13s;
+  animation-delay: -1s;
+}
+
+@keyframes bubbleFloat {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(8px, -22px);
+  }
+
+  50% {
+    transform: translate(-10px, -6px);
+  }
+
+  75% {
+    transform: translate(6px, -30px);
+  }
+}
+
+.soap-wrap {
+  position: absolute;
+}
+
+.soap-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(239, 224, 201, 0.55) 45%, rgba(201, 122, 99, 0.14) 100%);
+  border: 1px solid rgba(51, 41, 32, 0.1);
+  box-shadow:
+    inset -8px -10px 14px rgba(150, 105, 75, 0.16),
+    inset 5px 7px 12px rgba(255, 255, 255, 0.55),
+    0 18px 34px rgba(51, 41, 32, 0.1);
+  opacity: 0.8;
+  animation: bubbleFloat 23s ease-in-out infinite;
+}
+
+.sw1 {
+  left: 20%;
+  top: 58%;
+  transform: rotate(-14deg);
+}
+
+.sw1 .soap-bar {
+  width: 130px;
+  height: 68px;
+  animation-duration: 26s;
+}
+
+.sw2 {
+  right: 20%;
+  top: 24%;
+  transform: rotate(11deg);
+}
+
+.sw2 .soap-bar {
+  width: 96px;
+  height: 54px;
+  animation-duration: 20s;
+  animation-delay: -8s;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+/* ---------------- Header ---------------- */
+.site-header {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  text-align: center;
+  padding: 56px 24px 8px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 10px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 44px;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+  background: linear-gradient(120deg, var(--text) 40%, var(--coral) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ---------------- Stage ---------------- */
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------------- Viewfinder ---------------- */
+.scan-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.viewfinder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewfinder video,
+.viewfinder .frozen-frame {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  /* mirror, feels natural for a self-facing camera */
+}
+
+.face-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.face-guide ellipse {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 7;
+  opacity: 0.55;
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  top: 0;
+  background: linear-gradient(90deg, transparent, var(--teal) 20%, var(--teal) 80%, transparent);
+  box-shadow: 0 0 16px 2px rgba(94, 234, 212, 0.65);
+  animation: sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0% {
+    top: 4%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 4%;
+    opacity: 0;
+  }
+}
+
+.corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--coral);
+  opacity: 0.85;
+}
+
+.corner.tl {
+  top: 12px;
+  left: 12px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 6px;
+}
+
+.corner.tr {
+  top: 12px;
+  right: 12px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 6px;
+}
+
+.corner.bl {
+  bottom: 12px;
+  left: 12px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 6px;
+}
+
+.corner.br {
+  bottom: 12px;
+  right: 12px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 6px;
+}
+
+/* capture flash — quick shutter feedback when a photo is taken */
+.viewfinder::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.viewfinder.flash::after {
+  animation: flashPulse 0.45s ease-out;
+}
+
+@keyframes flashPulse {
+  0% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.viewfinder-status {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(18, 21, 26, 0.72);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ---------------- Controls ---------------- */
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+  width: 100%;
+}
+
+.btn {
+  flex: 1;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--coral);
+  color: #1A120F;
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary:not(:disabled):hover {
+  background: #EEA89D;
+}
+
+.btn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1A120F;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.hint {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+/* ---------------- Report panel ----------------
+   A warm, editorial "printed diagnosis" card — the visual
+   opposite of the dark scanner above it, so the reveal reads
+   like a result developing into light. Two blurred halos
+   (::before/::after) bloom in behind the copy for warmth;
+   every real content node sits in its own stacking layer via
+   `.report-panel > *` so it always renders above the halos.
+------------------------------------------------- */
+.report-panel {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 28px;
+  background: linear-gradient(175deg, var(--report-cream-soft), var(--report-cream));
+  border: 1px solid var(--report-border);
+  border-radius: 22px;
+  padding: 30px 28px 28px;
+  box-shadow: 0 28px 60px -24px rgba(0, 0, 0, 0.55);
+}
+
+.report-panel>* {
+  position: relative;
+  z-index: 1;
+}
+
+.report-panel::before,
+.report-panel::after {
+  content: "";
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.report-panel::before {
+  top: -80px;
+  right: -70px;
+  background: radial-gradient(circle, rgba(232, 153, 141, 0.4), transparent 70%);
+}
+
+.report-panel::after {
+  bottom: -90px;
+  left: -60px;
+  background: radial-gradient(circle, rgba(138, 90, 62, 0.3), transparent 70%);
+}
+
+/* `.reveal` is (re)added by app.js on every render, so the
+   sequence replays even on a second or third scan. */
+.report-panel.reveal {
+  animation: cardRise 0.55s cubic-bezier(0.16, 0.8, 0.24, 1) both;
+}
+
+.report-panel.reveal::before {
+  animation: blobIn 1.3s ease 0.1s both, blobBreathe 7s ease-in-out 1.4s infinite;
+}
+
+.report-panel.reveal::after {
+  animation: blobIn 1.3s ease 0.28s both, blobBreathe 8s ease-in-out 1.7s infinite;
+}
+
+.report-panel.reveal .report-head h2 {
+  animation: cardRise 0.5s ease 0.1s both;
+}
+
+.report-panel.reveal .confidence {
+  animation: cardRise 0.5s ease 0.16s both;
+}
+
+.report-panel.reveal .report-head::after {
+  animation: lineDraw 0.7s ease 0.24s both;
+}
+
+.report-panel.reveal .summary {
+  animation: cardRise 0.5s ease 0.3s both;
+}
+
+.report-panel.reveal .observation {
+  animation: cardRise 0.5s ease both;
+}
+
+.report-panel.reveal .care-tips h3 {
+  animation: cardRise 0.5s ease 0.6s both;
+}
+
+.report-panel.reveal .care-tips li {
+  animation: cardRise 0.4s ease both;
+}
+
+.report-panel.reveal .caveats {
+  animation: cardRise 0.5s ease 0.85s both;
+}
+
+.report-panel.reveal .pdf-btn {
+  animation: cardRise 0.5s ease 0.98s both;
+}
+
+@keyframes cardRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blobIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes blobBreathe {
+
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scale(1.14) translate(6px, -8px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes lineDraw {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.report-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+}
+
+.report-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--report-border);
+}
+
+/* the shared .eyebrow component reads teal in the header;
+   inside the cream card it drops to a quiet ink-brown */
+.report-panel .eyebrow {
+  color: var(--report-muted);
+  margin-bottom: 8px;
+}
+
+.report-head h2 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  margin: 4px 0 0;
+  text-transform: capitalize;
+  color: var(--report-heading);
+}
+
+.confidence {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.confidence-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--report-muted);
+}
+
+.confidence-value {
+  display: block;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--report-heading);
+  text-transform: capitalize;
+  margin-top: 5px;
+}
+
+.summary {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--report-ink);
+  margin: 0 0 24px;
+}
+
+.observations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.observation {
+  background: var(--report-card);
+  border: 1px solid var(--report-border);
+  border-radius: 14px;
+  padding: 15px 16px;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.observation:hover {
+  transform: translateY(-3px);
+  border-color: var(--report-heading);
+  box-shadow: 0 10px 22px -12px rgba(120, 80, 50, 0.45);
+}
+
+.observation .label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--report-muted);
+  margin-bottom: 6px;
+}
+
+.observation .detail {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--report-ink);
+}
+
+.care-tips h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  margin: 0 0 14px;
+  color: var(--report-heading);
+}
+
+.care-tips ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.care-tips li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--report-ink);
+}
+
+.care-tips li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--report-heading);
+}
+
+.caveats {
+  margin: 24px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--report-border);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--report-muted);
+}
+
+.pdf-btn {
+  margin-top: 22px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--report-heading);
+  background: transparent;
+  border: 1px solid var(--report-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.pdf-btn:hover:not(:disabled) {
+  background: var(--report-heading);
+  border-color: var(--report-heading);
+  color: var(--report-cream-soft);
+}
+
+.pdf-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.pdf-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.pdf-btn-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.pdf-btn:hover:not(:disabled) .pdf-btn-icon {
+  animation: bounceDown 0.6s ease infinite;
+}
+
+@keyframes bounceDown {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+/* while html2canvas captures the card for the PDF, hide the blurred
+   glow — canvas rendering of CSS `filter: blur()` is unreliable */
+.report-panel.exporting::before,
+.report-panel.exporting::after {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+.report-panel.exporting .report-head h2,
+.report-panel.exporting .confidence,
+.report-panel.exporting .report-head::after,
+.report-panel.exporting .summary,
+.report-panel.exporting .observation,
+.report-panel.exporting .care-tips h3,
+.report-panel.exporting .care-tips li,
+.report-panel.exporting .caveats,
+.report-panel.exporting .pdf-btn {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  width: auto !important;
+}
+
+/* ---------------- Error panel ---------------- */
+.error-panel {
+  width: 100%;
+  margin-top: 24px;
+  background: rgba(232, 153, 141, 0.07);
+  border: 1px solid rgba(232, 153, 141, 0.3);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.error-panel p {
+  color: var(--coral);
+  font-size: 14px;
+  margin: 0 0 14px;
+}
+
+/* ---------------- Footer ---------------- */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  padding: 8px 24px 48px;
+  text-align: center;
+}
+
+.site-footer p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
+/* ---------------- Booth display mode ---------------- */
+/* Opened as ?display on the big screen: no controls, larger idle prompt. */
+.display-mode .controls {
+  display: none;
+}
+
+.display-mode .viewfinder-status {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+/* ---------------- Reduced motion ---------------- */
+@media (prefers-reduced-motion: reduce) {
+  .scan-line {
+    animation: none;
+    top: 50%;
+    opacity: 0.8;
+  }
+
+  .viewfinder.flash::after {
+    animation: none;
+  }
+
+  .pdf-btn:hover .pdf-btn-icon {
+    animation: none;
+  }
+
+  .report-panel.reveal,
+  .report-panel.reveal::before,
+  .report-panel.reveal::after,
+  .report-panel.reveal .report-head h2,
+  .report-panel.reveal .confidence,
+  .report-panel.reveal .summary,
+  .report-panel.reveal .observation,
+  .report-panel.reveal .care-tips h3,
+  .report-panel.reveal .care-tips li,
+  .report-panel.reveal .caveats,
+  .report-panel.reveal .pdf-btn {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .report-panel.reveal .report-head::after {
+    animation: none;
+    width: 100%;
+  }
+}
+
+/* ---------------- Small screens ---------------- */
+@media (max-width: 380px) {
+  .logo {
+    font-size: 36px;
+  }
+
+  .observations {
+    grid-template-columns: 1fr;
+  }
+
+  .report-panel {
+    padding: 24px 20px 22px;
+  }
+
+  .report-head h2 {
+    font-size: 27px;
+  }
+}
