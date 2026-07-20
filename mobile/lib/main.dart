@@ -10,6 +10,7 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -158,7 +159,23 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
     try {
       final XFile shot = await controller.takePicture();
-      final Uint8List bytes = await shot.readAsBytes();
+      final Uint8List rawBytes = await shot.readAsBytes();
+
+      // Compress the image before encoding. The raw JPEG from ResolutionPreset.medium
+      // is typically 1.5–4 MB on Android, which can take 10–30 s to upload over a
+      // congested booth Wi-Fi. Compressing to 800 px wide / quality 75 brings it to
+      // ~80–150 KB while keeping enough detail for Gemini's vision analysis.
+      final Uint8List bytes = await FlutterImageCompress.compressWithList(
+        rawBytes,
+        minWidth: 800,
+        minHeight: 600,
+        quality: 75,
+        format: CompressFormat.jpeg,
+      ) ?? rawBytes; // fallback to original if compress returns null
+
+      final int kb = (bytes.lengthInBytes / 1024).round();
+      setState(() => _message = 'Uploading image (${kb} KB)…');
+
       final String dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       String cleanHost = _host.trim();
@@ -178,7 +195,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
             },
             body: jsonEncode({'image': dataUrl}),
           )
-          .timeout(const Duration(seconds: 45));
+          .timeout(const Duration(seconds: 90));
 
       if (res.statusCode == 200) {
         setState(() {
