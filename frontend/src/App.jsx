@@ -58,6 +58,7 @@ export default function App() {
   const [revealActive, setRevealActive] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [wsStatusText, setWsStatusText] = useState("Connecting to scanner…");
+  const [backdropActive, setBackdropActive] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -167,6 +168,18 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [report]);
+
+  // Set backdropActive on the next animation frame after a report renders
+  useEffect(() => {
+    if (report && !isScanning) {
+      const frame = requestAnimationFrame(() => {
+        setBackdropActive(true);
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setBackdropActive(false);
+    }
+  }, [report, isScanning]);
 
   // Handle WebSocket display channel events in display mode
   useEffect(() => {
@@ -403,57 +416,24 @@ export default function App() {
     startCamera();
   };
 
+  const skinType = report?.skin_type || "unclear";
+  const mappedSkinType = (skinType === "oily" || skinType === "dry" || skinType === "combination") 
+    ? skinType 
+    : "normal";
+  const backdropClass = `backdrop-${mappedSkinType}`;
+
   return (
     <>
       <div className={`ui-morph-shimmer ${morphActive ? "active" : ""}`} id="uiMorphShimmer" aria-hidden="true"></div>
       <div className="grid-overlay" aria-hidden="true"></div>
 
-      <div id="skinBackdrop" aria-hidden="true">
-        <svg className="dry-cracks-svg" width="100%" height="100%">
-          <defs>
-            <pattern id="realCracksPattern" width="300" height="300" patternUnits="userSpaceOnUse">
-              <path className="crack-path-1" d="
-                M 0 0 L 30 15 L 55 45 L 80 40 L 110 70 L 115 110 L 85 140 L 90 190 L 60 210 L 65 260 L 35 285 L 0 300
-                M 30 15 L 75 10 L 125 35 L 165 30 L 210 55 L 245 45 L 285 75 L 300 70
-                M 55 45 L 60 95 L 90 120 L 135 115 L 160 155 L 155 205 L 180 230 L 175 280 L 215 300
-                M 110 70 L 155 75 L 195 105 L 190 155 M 195 105 L 240 100 L 285 130
-                M 115 110 L 125 160 L 95 185 L 120 230 L 105 275 L 135 300
-                M 160 155 L 215 165 L 235 210 L 215 250 L 245 285 L 240 300
-                M 190 155 L 185 205 L 235 210
-                M 245 45 L 250 95 L 295 110 M 250 95 L 235 145 M 285 130 L 280 180 L 300 190
-                M 280 180 L 255 215 L 285 250 L 270 295 L 300 300
-                M 90 190 L 120 230
-                M 155 205 L 120 230
-                M 215 250 L 175 280
-                M 60 210 L 25 200 L 0 220
-                M 25 200 L 15 150 L 0 140
-                M 15 150 L 60 95
-                M 65 260 L 75 300
-                M 35 285 L 0 280
-              " fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
-              <path className="crack-path-2" d="
-                M 75 10 L 80 0
-                M 165 30 L 170 0
-                M 285 75 L 290 50
-                M 155 75 L 150 50
-                M 95 185 L 75 170 M 95 185 L 110 200
-                M 215 165 L 210 140 M 215 165 L 225 180
-                M 255 215 L 270 205 M 255 215 L 250 230
-                M 25 200 L 35 220
-              " fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.6" strokeLinejoin="round" strokeLinecap="round" />
-            </pattern>
-            <filter id="dryCracks" x="0%" y="0%" width="100%" height="100%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise" />
-              <feColorMatrix type="matrix" values="
-                0 0 0 0 0.35
-                0 0 0 0 0.30
-                0 0 0 0 0.25
-                14 0 0 0 -12" result="crackLines" />
-              <feComposite operator="over" in="crackLines" in2="SourceGraphic" />
-            </filter>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#realCracksPattern)" />
-        </svg>
+      <div 
+        id="skinBackdrop" 
+        aria-hidden="true"
+      >
+        <div className={`backdrop-image ${backdropClass} ${backdropActive ? "backdrop-active" : ""}`} aria-hidden="true"></div>
+        <div className="backdrop-overlay" aria-hidden="true"></div>
+
       </div>
 
       <div className="bubble-field" aria-hidden="true">

@@ -122,13 +122,13 @@ body[data-skin-type="unclear"] {
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
 body {
+  background: transparent;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -186,6 +186,12 @@ body {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  transition: opacity 700ms ease, visibility 700ms ease;
+}
+
+body[data-skin-type] .bubble-field {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .bubble {
@@ -648,6 +654,7 @@ a:focus-visible {
   margin: 4px 0 0;
   text-transform: capitalize;
   color: var(--olive);
+  text-shadow: 0 1px 2px rgba(67, 78, 63, 0.05);
 }
 
 .confidence {
@@ -926,6 +933,46 @@ body.is-scanning .viewfinder {
   overflow: hidden;
 }
 
+.backdrop-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 700ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.backdrop-image.backdrop-active {
+  opacity: 1;
+}
+
+.backdrop-image.backdrop-oily {
+  background-image: url('./assets/background/oily.png');
+}
+
+.backdrop-image.backdrop-dry {
+  background-image: url('./assets/background/dry.png');
+}
+
+.backdrop-image.backdrop-combination {
+  background-image: url('./assets/background/combination.png');
+}
+
+.backdrop-image.backdrop-normal {
+  background-image: url('./assets/background/normal.png');
+}
+
+.backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+
 body.bg-oily #skinBackdrop::before {
   content: "";
   position: absolute;
@@ -945,50 +992,7 @@ body.bg-oily #skinBackdrop::before {
   will-change: background-position, filter;
 }
 
-#skinBackdrop .dry-cracks-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  visibility: hidden;
-  opacity: 0;
-  color: rgba(67, 78, 63, 0.35);
-  transition: opacity 800ms ease, visibility 800ms ease;
-  pointer-events: none;
-}
 
-body.bg-dry #skinBackdrop .dry-cracks-svg {
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-body.bg-combination #skinBackdrop .dry-cracks-svg {
-  visibility: visible !important;
-  opacity: 1 !important;
-  -webkit-mask-image: linear-gradient(135deg, transparent 30%, black 70%);
-  mask-image: linear-gradient(135deg, transparent 30%, black 70%);
-}
-
-body.bg-dry #skinBackdrop .dry-cracks-svg .crack-path-1,
-body.bg-combination #skinBackdrop .dry-cracks-svg .crack-path-1 {
-  stroke-dasharray: 1800;
-  stroke-dashoffset: 1800;
-  animation: draw-cracks 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: 0.8s;
-}
-
-body.bg-dry #skinBackdrop .dry-cracks-svg .crack-path-2,
-body.bg-combination #skinBackdrop .dry-cracks-svg .crack-path-2 {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: draw-cracks 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: 1.2s;
-}
-
-@keyframes draw-cracks {
-  to { stroke-dashoffset: 0; }
-}
 
 body.bg-combination #skinBackdrop::after {
   content: "";
@@ -1042,6 +1046,10 @@ body.bg-combination #skinBackdrop::after {
   }
   #skinBackdrop::before,
   #skinBackdrop::after { animation: none !important; }
+  #skinBackdrop,
+  .backdrop-image {
+    transition: none !important;
+  }
 }
 
 /* ---------------- Small screens ---------------- */

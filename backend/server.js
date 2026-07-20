@@ -82,7 +82,58 @@ app.get("/api/health", (req, res) => {
 // different device, so we push each finished report to it over a WebSocket.
 // Any browser tab opened with `?display` connects to /ws/display and listens.
 const server = http.createServer(app);
+
+// Gracefully handle client connection socket errors to prevent the server from crashing.
+server.on("connection", (socket) => {
+  socket.on("error", (err) => {
+    if (
+      err.code === "ECONNRESET" ||
+      err.code === "ECONNABORTED" ||
+      err.code === "EPIPE"
+    ) {
+      return; // Ignore common connection drops/aborts
+    }
+    console.error("Connection socket error:", err);
+  });
+});
+
+server.on("clientError", (err, socket) => {
+  if (
+    err.code === "ECONNRESET" ||
+    err.code === "ECONNABORTED" ||
+    err.code === "EPIPE"
+  ) {
+    socket.destroy();
+    return;
+  }
+  console.warn("Client connection error:", err.message);
+  socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+});
+
+// Process-level handlers for unhandled socket exceptions/rejections
+process.on("uncaughtException", (err) => {
+  if (
+    err.code === "ECONNRESET" ||
+    err.code === "ECONNABORTED" ||
+    err.code === "EPIPE"
+  ) {
+    console.warn(`[Node Process] Handled socket error gracefully: ${err.message}`);
+    return;
+  }
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 const wss = new WebSocketServer({ server, path: "/ws/display" });
+
+wss.on("error", (err) => {
+  console.error("WebSocket server error:", err);
+});
+
 const displays = new Set();
 
 wss.on("connection", (socket) => {
@@ -156,9 +207,15 @@ async function callOpenAIWithRetry(params, retries = 3, initialDelay = 1500) {
     try {
       return await openai.chat.completions.create(params);
     } catch (err) {
-      const isRateLimit = err.status === 429 || (err.message && err.message.includes("429"));
-      if (isRateLimit && i < retries - 1) {
-        console.warn(`[Gemini API] Rate limit (429) encountered. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
+      const isTransient = 
+        err.status === 429 || 
+        err.status === 502 || 
+        err.status === 503 || 
+        err.status === 504 || 
+        (err.message && /429|502|503|504/.test(err.message));
+      
+      if (isTransient && i < retries - 1) {
+        console.warn(`[Gemini API] Transient error (${err.status || 'unknown'}) encountered. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= 2; // exponential backoff
       } else {
