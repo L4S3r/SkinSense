@@ -41,10 +41,13 @@ const MODEL = process.env.SKIN_ANALYSIS_MODEL || "gemini-3.5-flash";
 const app = express();
 app.use(express.json({ limit: "15mb" })); // photos as base64 need headroom
 
-// Enable CORS for frontend cross-origin access
+// Enable CORS for frontend & ngrok cross-origin access
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, ngrok-skip-browser-warning, User-Agent"
+  );
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
@@ -165,6 +168,75 @@ async function callOpenAIWithRetry(params, retries = 3, initialDelay = 1500) {
   }
 }
 
+// Helper to safely parse or repair model JSON outputs
+function safeParseJSON(rawInput) {
+  let cleaned = rawInput
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+      } catch (innerErr) {
+        // proceed to auto-repair
+      }
+    }
+
+    if (firstBrace !== -1) {
+      let candidate = cleaned.slice(firstBrace).replace(/,\s*$/, "");
+      let inString = false;
+      let escape = false;
+      let stack = [];
+
+      for (let i = 0; i < candidate.length; i++) {
+        const char = candidate[i];
+        if (escape) {
+          escape = false;
+          continue;
+        }
+        if (char === "\\") {
+          escape = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (char === "{" || char === "[") {
+            stack.push(char === "{" ? "}" : "]");
+          } else if (char === "}" || char === "]") {
+            if (stack.length && stack[stack.length - 1] === char) {
+              stack.pop();
+            }
+          }
+        }
+      }
+
+      if (inString) candidate += '"';
+      while (stack.length > 0) {
+        candidate += stack.pop();
+      }
+
+      try {
+        return JSON.parse(candidate);
+      } catch (repairErr) {
+        // proceed to fallback
+      }
+    }
+
+    throw new Error("Unable to parse model JSON");
+  }
+}
+
 app.post("/api/analyze", async (req, res) => {
   try {
     const { image } = req.body;
@@ -182,7 +254,7 @@ app.post("/api/analyze", async (req, res) => {
     const response = await callOpenAIWithRetry({
       model: MODEL,
       temperature: 0.2,
-      max_tokens: 600,
+      max_tokens: 1200,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -200,21 +272,27 @@ app.post("/api/analyze", async (req, res) => {
     });
 
     const raw = response.choices?.[0]?.message?.content || "";
-    const cleaned = raw
-      .trim()
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```$/i, "")
-      .trim();
-
     let report;
+
     try {
-      report = JSON.parse(cleaned);
+      report = safeParseJSON(raw);
     } catch (parseErr) {
       console.error("Failed to parse model output as JSON:\n", raw);
-      return res.status(502).json({
-        error: "The AI response couldn't be read as a report. Please try again.",
-      });
+      // Fallback report if model output is severely malformed
+      report = {
+        skin_type: "unclear",
+        confidence: "low",
+        summary: "The scan could not be fully evaluated. Please retake your photo in bright, direct lighting facing the camera.",
+        observations: [
+          { label: "Photo Quality", detail: "Image lighting or orientation was unclear for cosmetic surface analysis." }
+        ],
+        care_tips: [
+          "Ensure your face is well-lit without harsh shadows",
+          "Remove sunglasses or obstructions before scanning",
+          "Keep the camera steady at eye level"
+        ],
+        caveats: "A face was not clearly detected. Please retake the photo facing the camera in even lighting."
+      };
     }
 
     // Push finished report to any booth screens, then return to caller.

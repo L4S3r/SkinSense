@@ -162,14 +162,20 @@ class _CaptureScreenState extends State<CaptureScreen> {
       final String dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       String cleanHost = _host.trim();
+      final bool isHttps = cleanHost.startsWith('https://') || cleanHost.contains('ngrok') || cleanHost.contains('loca.lt');
       cleanHost = cleanHost.replaceAll(RegExp(r'^https?://'), '');
       cleanHost = cleanHost.replaceAll(RegExp(r'/$'), '');
 
-      final uri = Uri.parse('http://$cleanHost/api/analyze');
+      final scheme = isHttps ? 'https' : 'http';
+      final uri = Uri.parse('$scheme://$cleanHost/api/analyze');
       final res = await http
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+              'User-Agent': 'MeloniqCaptureMobile/1.0',
+            },
             body: jsonEncode({'image': dataUrl}),
           )
           .timeout(const Duration(seconds: 45));

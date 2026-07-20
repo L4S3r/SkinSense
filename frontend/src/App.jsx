@@ -4,6 +4,42 @@ import { jsPDF } from "jspdf";
 import "./App.css";
 import brandLogo from "./assets/logo.webp";
 
+// Helper function to build API endpoint for any IP address or domain URL
+function getApiEndpoint(path = "") {
+  let base = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (!base) return path;
+
+  if (!/^https?:\/\//i.test(base)) {
+    const isSecure = base.includes("ngrok") || base.includes("loca.lt") || base.endsWith(".trycloudflare.com");
+    base = (isSecure ? "https://" : "http://") + base;
+  }
+  
+  base = base.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${cleanPath}`;
+}
+
+// Helper function to build WebSocket URL for booth display mode
+function getWebSocketUrl(path = "/ws/display") {
+  let base = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (base) {
+    if (!/^https?:\/\//i.test(base)) {
+      const isSecure = base.includes("ngrok") || base.includes("loca.lt") || base.endsWith(".trycloudflare.com");
+      base = (isSecure ? "https://" : "http://") + base;
+    }
+    try {
+      const url = new URL(base);
+      const wsProto = url.protocol === "https:" ? "wss:" : "ws:";
+      return `${wsProto}//${url.host}${path}`;
+    } catch {
+      // fallback
+    }
+  }
+
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${window.location.host}${path}`;
+}
+
 export default function App() {
   const [isDisplay] = useState(() => {
     return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("display");
@@ -136,18 +172,7 @@ export default function App() {
     let reconnectTimeout = null;
 
     const connectDisplaySocket = () => {
-      let wsUrl;
-      const customApiBase = import.meta.env.VITE_API_BASE_URL;
-      if (customApiBase) {
-        const url = new URL(customApiBase);
-        const wsProto = url.protocol === "https:" ? "wss:" : "ws:";
-        wsUrl = `${wsProto}//${url.host}/ws/display`;
-      } else {
-        const proto = window.location.protocol === "https:" ? "wss" : "ws";
-        const host = window.location.host;
-        wsUrl = `${proto}://${host}/ws/display`;
-      }
-
+      const wsUrl = getWebSocketUrl("/ws/display");
       ws = new WebSocket(wsUrl);
 
       ws.addEventListener("open", () => {
@@ -331,10 +356,13 @@ export default function App() {
 
     let success = false;
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || "";
-      const res = await fetch(`${apiBase}/api/analyze`, {
+      const targetUrl = getApiEndpoint("/api/analyze");
+      const res = await fetch(targetUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({ image: dataUrl }),
       });
 
