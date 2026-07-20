@@ -5,7 +5,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Meloniq uses the camera to capture a face photo for skin-type analysis.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Meloniq Capture requires access to your local network to connect to the Meloniq analysis server on port 3000.</string>
+	<string>Meloniq Capture needs local network access to send your photo to the analysis server.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Booth mode reaches the backend over plain HTTP on the local network.
