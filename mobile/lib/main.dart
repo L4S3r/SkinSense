@@ -291,38 +291,44 @@ class _CaptureScreenState extends State<CaptureScreen> {
             !_controller!.value.isInitialized) {
           return const Center(child: CircularProgressIndicator(color: _teal));
         }
-        final isFront = _lens == CameraLensDirection.front;
-        return Stack(
-          alignment: Alignment.center,
-          fit: StackFit.expand,
-          children: [
-            // Mirror only the front camera so it feels natural, like a selfie.
-            // The rear camera is shown un-mirrored (what you point it at).
-            Transform(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
               alignment: Alignment.center,
-              transform: isFront
-                  ? Matrix4.rotationY(3.1415926535)
-                  : Matrix4.identity(),
-              child: CameraPreview(_controller!),
-            ),
-            _buildFaceGuide(),
-            if (_canSwitchCamera)
-              Positioned(
-                top: 16,
-                right: 16,
-                child: _CameraSwitchButton(
-                  onPressed:
-                      _state == SendState.sending ? null : _switchCamera,
+              fit: StackFit.expand,
+              children: [
+                // Use FittedBox (BoxFit.cover) + ClipRect to preserve natural aspect ratio without stretching.
+                ClipRect(
+                  child: SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: constraints.maxWidth,
+                        child: CameraPreview(_controller!),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            if (_state == SendState.sending)
-              Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: CircularProgressIndicator(color: _teal),
-                ),
-              ),
-          ],
+                _buildFaceGuide(),
+                if (_canSwitchCamera)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: _CameraSwitchButton(
+                      onPressed:
+                          _state == SendState.sending ? null : _switchCamera,
+                    ),
+                  ),
+                if (_state == SendState.sending)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: CircularProgressIndicator(color: _teal),
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
     );
