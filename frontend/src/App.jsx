@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import "./App.css";
-import brandLogo from "./assets/logo.webp";
+import brandLogo from "./assets/meloniq-logo-trimmed.png";
 
 // Helper function to build API endpoint for any IP address or domain URL
 function getApiEndpoint(path = "") {
@@ -90,6 +90,10 @@ export default function App() {
 
       // A4 dimensions are 210mm x 297mm
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+
+      // Add interactive click targets in generated PDF
+      pdf.link(12, 10, 55, 18, { url: "https://meloniq-eta.vercel.app/" });
+      pdf.link(12, 275, 186, 12, { url: "https://meloniq-eta.vercel.app/" });
 
       const today = new Date();
       const year = today.getFullYear();
@@ -393,6 +397,9 @@ export default function App() {
   };
 
   const handleRetry = () => {
+    setReport(null);
+    setCapturedImage(null);
+    setError(null);
     startCamera();
   };
 
@@ -470,7 +477,9 @@ export default function App() {
       <header className="site-header">
         <div className="eyebrow">AI · Skin Analysis</div>
         <div className="meloniq-brand">
-          <img src={brandLogo} alt="Meloniq Logo" className="meloniq-brand-logo" />
+          <a href="https://meloniq-eta.vercel.app/" target="_blank" rel="noopener noreferrer" className="meloniq-brand-link">
+            <img src={brandLogo} alt="Meloniq Logo" className="meloniq-brand-logo" />
+          </a>
         </div>
         <p className="tagline">Point your camera at your face. Meloniq reads the surface — oil, texture, tone — and hands back a plain-language skin report.</p>
       </header>
@@ -571,8 +580,8 @@ export default function App() {
                   className="observation" 
                   style={{ animationDelay: `${0.32 + index * 0.07}s` }}
                 >
-                  <span className="label">{obs.label || ""}</span>
-                  <span className="detail">{obs.detail || ""}</span>
+                  <span className="label">{obs.label || obs.name || obs.title || "Observation"}</span>
+                  <span className="detail">{obs.detail || obs.description || obs.text || (typeof obs === "string" ? obs : "")}</span>
                 </div>
               ))}
             </div>
@@ -585,7 +594,7 @@ export default function App() {
                     key={index}
                     style={{ animationDelay: `${0.68 + index * 0.06}s` }}
                   >
-                    {tip}
+                    {typeof tip === "string" ? tip : (tip.tip || tip.text || tip.detail || JSON.stringify(tip))}
                   </li>
                 ))}
               </ul>
@@ -636,7 +645,9 @@ export default function App() {
               {/* 1. Letterhead Header */}
               <div className="pdf-header">
                 <div className="pdf-brand">
-                  <img src={brandLogo} alt="Meloniq Logo" className="pdf-brand-logo" crossOrigin="anonymous" />
+                  <a href="https://meloniq-eta.vercel.app/" target="_blank" rel="noopener noreferrer" className="pdf-brand-link">
+                    <img src={brandLogo} alt="Meloniq Logo" className="pdf-brand-logo" crossOrigin="anonymous" />
+                  </a>
                   <div className="pdf-subhead">AI Skin Analysis Report</div>
                 </div>
                 <div className="pdf-meta">
@@ -668,8 +679,8 @@ export default function App() {
               <div className="pdf-grid">
                 {(report.observations || []).map((obs, i) => (
                   <div key={i} className="pdf-card">
-                    <div className="pdf-card-label">{obs.label || ""}</div>
-                    <div className="pdf-card-detail">{obs.detail || ""}</div>
+                    <div className="pdf-card-label">{obs.label || obs.name || obs.title || "Observation"}</div>
+                    <div className="pdf-card-detail">{obs.detail || obs.description || obs.text || (typeof obs === "string" ? obs : "")}</div>
                   </div>
                 ))}
               </div>
@@ -678,7 +689,9 @@ export default function App() {
               <div className="pdf-section-heading">Care Notes & Daily Regimen</div>
               <ul className="pdf-tips-list">
                 {(report.care_tips || []).map((tip, i) => (
-                  <li key={i} className="pdf-tip-item">{tip}</li>
+                  <li key={i} className="pdf-tip-item">
+                    {typeof tip === "string" ? tip : (tip.tip || tip.text || tip.detail || JSON.stringify(tip))}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -691,7 +704,9 @@ export default function App() {
                 </div>
               )}
               <div className="pdf-footer">
-                <span>Meloniq Skincare AI • www.meloniq.ai • Cosmetic Information Only</span>
+                <span>
+                  Meloniq • <a href="https://meloniq-eta.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>https://meloniq-eta.vercel.app</a> • Handmade botanical care inspired by calm rituals.
+                </span>
                 <span>Page 1 of 1</span>
               </div>
             </div>

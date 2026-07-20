@@ -284,9 +284,9 @@ a:focus-visible {
 .site-header {
   position: relative;
   z-index: 1;
-  max-width: 760px;
+  max-width: 580px;
   text-align: center;
-  padding: 40px 24px 12px;
+  padding: 44px 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -298,28 +298,34 @@ a:focus-visible {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--olive-light);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .meloniq-brand {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   width: 100%;
 }
 
+.meloniq-brand-link {
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .meloniq-brand-logo {
-  height: 320px;
+  height: 52px;
   width: auto;
-  max-width: 90vw;
+  max-width: 220px;
   object-fit: contain;
-  filter: drop-shadow(0 8px 24px rgba(67, 78, 63, 0.15));
+  filter: drop-shadow(0 4px 16px rgba(67, 78, 63, 0.12));
   transition: transform 0.3s ease;
 }
 
 .meloniq-brand-logo:hover {
-  transform: scale(1.015);
+  transform: scale(1.02);
 }
 
 .tagline {
@@ -1075,28 +1081,35 @@ body.bg-combination #skinBackdrop::after {
 
 .pdf-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #434E3F;
+  border-bottom: 1.5px solid #434E3F;
   padding-bottom: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .pdf-brand {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+}
+
+.pdf-brand-link {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .pdf-brand-logo {
-  height: 68px;
+  height: 30px;
   width: auto;
-  max-width: 300px;
+  max-width: 140px;
   object-fit: contain;
 }
 
 .pdf-subhead {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #596754;
@@ -1106,14 +1119,16 @@ body.bg-combination #skinBackdrop::after {
 .pdf-meta {
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 10px;
   color: #596754;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .pdf-meta-title {
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   color: #434E3F;
+  margin-bottom: 2px;
 }
 
 .pdf-overview {

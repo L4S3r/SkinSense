@@ -237,6 +237,15 @@ function safeParseJSON(rawInput) {
   }
 }
 
+function isReportValid(report) {
+  if (!report || typeof report !== "object") return false;
+  if (!report.skin_type || typeof report.skin_type !== "string") return false;
+  if (!report.summary || typeof report.summary !== "string" || report.summary.trim().length < 15) return false;
+  if (!Array.isArray(report.care_tips) || report.care_tips.length === 0) return false;
+  if (!Array.isArray(report.observations) || report.observations.length === 0) return false;
+  return true;
+}
+
 app.post("/api/analyze", async (req, res) => {
   try {
     const { image } = req.body;
@@ -251,10 +260,10 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
-    const response = await callOpenAIWithRetry({
+    const requestParams = {
       model: MODEL,
       temperature: 0.2,
-      max_tokens: 1200,
+      max_tokens: 2048,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -263,39 +272,54 @@ app.post("/api/analyze", async (req, res) => {
           content: [
             {
               type: "text",
-              text: "Analyze this face photo and return the JSON skin report described in your instructions.",
+              text: "Analyze this face photo and return the complete JSON skin report described in your instructions.",
             },
             { type: "image_url", image_url: { url: image } },
           ],
         },
       ],
-    });
+    };
 
-    const raw = response.choices?.[0]?.message?.content || "";
-    let report;
+    let response = await callOpenAIWithRetry(requestParams);
+    let choice = response.choices?.[0];
+    let finishReason = choice?.finish_reason;
+    let raw = choice?.message?.content || "";
+    let report = null;
+
+    if (finishReason === "length" || finishReason === "max_tokens") {
+      console.warn(`[Gemini API] Output truncated by max_tokens (finish_reason: ${finishReason}). Retrying with max_tokens: 2048...`);
+      response = await callOpenAIWithRetry({ ...requestParams, max_tokens: 2048, temperature: 0.1 });
+      choice = response.choices?.[0];
+      finishReason = choice?.finish_reason;
+      raw = choice?.message?.content || "";
+    }
 
     try {
       report = safeParseJSON(raw);
     } catch (parseErr) {
-      console.error("Failed to parse model output as JSON:\n", raw);
-      // Fallback report if model output is severely malformed
-      report = {
-        skin_type: "unclear",
-        confidence: "low",
-        summary: "The scan could not be fully evaluated. Please retake your photo in bright, direct lighting facing the camera.",
-        observations: [
-          { label: "Photo Quality", detail: "Image lighting or orientation was unclear for cosmetic surface analysis." }
-        ],
-        care_tips: [
-          "Ensure your face is well-lit without harsh shadows",
-          "Remove sunglasses or obstructions before scanning",
-          "Keep the camera steady at eye level"
-        ],
-        caveats: "A face was not clearly detected. Please retake the photo facing the camera in even lighting."
-      };
+      console.error("[Gemini API] JSON parse error on raw output:\n", raw);
     }
 
-    // Push finished report to any booth screens, then return to caller.
+    // If report is missing care_tips or truncated, attempt one final retry
+    if (!isReportValid(report)) {
+      console.warn("[Gemini API] Report was invalid or incomplete. Retrying vision request...");
+      try {
+        response = await callOpenAIWithRetry({ ...requestParams, max_tokens: 2048, temperature: 0.1 });
+        raw = response.choices?.[0]?.message?.content || "";
+        report = safeParseJSON(raw);
+      } catch (retryErr) {
+        console.error("[Gemini API] Retry failed to yield valid report.");
+      }
+    }
+
+    if (!isReportValid(report)) {
+      console.error("[Gemini API] Unable to produce complete report. Raw content:\n", raw);
+      return res.status(502).json({
+        error: "The AI skin report was incomplete or truncated. Please retake your photo and scan again.",
+      });
+    }
+
+    // Push finished valid report to any booth screens, then return to caller.
     broadcastToDisplays({ type: "report", report, image });
 
     return res.json({ report });
