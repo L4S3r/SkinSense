@@ -292,30 +292,34 @@ skincare tips.
 
 SKIN TYPE CLASSIFICATION — apply this rubric before choosing skin_type.
 Distinguish between two things that are easy to confuse in a selfie:
-(a) uniform, mild shine spread evenly across the whole face from ordinary
-    skin oil, indoor lighting, or camera flash — this is common and is
-    NOT itself evidence of oily or combination skin, versus
-(b) a real difference in oiliness BETWEEN zones of the face — this is
-    the defining feature of combination skin, and does not need to be
-    extreme to count.
+(a) mild, uniform shine spread evenly across the whole face — the kind
+    that comes from ordinary skin oil, indoor lighting, or camera flash
+    — is common and is NOT itself evidence of oily or combination skin.
+    This is different from pronounced, slick, or heavy shine across
+    most of the face, which IS evidence of oily skin even when it's
+    evenly distributed rather than zone-specific (see "oily" below).
+(b) a real difference in KIND between zones — an oily/shiny T-zone next
+    to cheeks that are genuinely matte or dry, not just less shiny than
+    the forehead — is the defining feature of combination skin.
 
 - "normal": shine, if present, is roughly even across the face rather
   than concentrated in one zone. Tone is reasonably consistent, pores
   aren't conspicuous, no clear dry patches. Ordinary selfie lighting and
   minor asymmetries are expected; this does not require a
   studio-quality photo.
-- "oily": shine, enlarged pores, or a visibly slick texture across MOST
-  of the face — not concentrated in one zone.
+- "oily": visible shine, enlarged pores, or a slick texture across MOST of
+  the face, including the cheeks — even if the forehead/nose is shinier
+  still. The T-zone being the shiniest area is expected on oily skin and
+  is NOT enough on its own to call it combination.
 - "dry": visibly matte/dull texture, flaking, or tightness cues across
   most of the face.
-- "combination": the forehead/nose (T-zone) is visibly shinier or oilier
-  than the cheeks, AND the cheeks look more matte, dry, or flat by
-  comparison. Judge this by the DIFFERENCE between the two zones, not
-  the absolute amount of shine in either one — a moderate T-zone
-  highlight next to noticeably drier cheeks still counts as
-  combination. Do not require the contrast to be extreme, and do not
-  downgrade a real two-zone difference to "normal" just because neither
-  zone looks dramatic on its own.
+- "combination": the forehead/nose (T-zone) is visibly oily/shiny AND the
+  cheeks independently show matte, dry, or flat characteristics — not
+  merely "less shiny than the forehead," but genuinely lacking the shine/
+  oil present in the T-zone. If the cheeks still show visible sheen, oil,
+  or oil-related pore texture, even at a lower level than the T-zone,
+  classify as oily instead. Combination requires the cheeks to look
+  authentically different in kind, not just lesser in degree.
 - "sensitive": visible redness, blotchiness, or irritation is clearly
   present.
 - "unclear": no face clearly visible.
@@ -323,6 +327,13 @@ Distinguish between two things that are easy to confuse in a selfie:
 Use "confidence": "low" when the pattern is genuinely hard to read, but
 still choose the category the visible evidence best supports — don't
 default to "normal" just to avoid a judgment call.
+
+Before finalizing, check your own "observations" for internal
+consistency — e.g. don't describe cheeks as "matte" in one observation
+and then attribute cheek pore visibility to "oil production" in
+another. If your observations conflict, resolve the conflict before
+choosing skin_type rather than picking a label that only some of your
+own observations support.
 
 Respond with ONLY one JSON object (no markdown fences, no commentary
 outside the JSON) in exactly this shape:
