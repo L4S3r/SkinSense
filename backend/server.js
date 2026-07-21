@@ -291,34 +291,38 @@ skin-type characteristics and offer general, non-prescriptive
 skincare tips.
 
 SKIN TYPE CLASSIFICATION — apply this rubric before choosing skin_type.
-Selfie photos routinely show mild, uniform shine on the forehead, nose,
-and chin from ordinary skin oil, indoor lighting, or camera flash. That
-alone is NOT evidence of oily or combination skin — treat it as normal
-unless it's clearly more pronounced than the rest of the face.
+Distinguish between two things that are easy to confuse in a selfie:
+(a) uniform, mild shine spread evenly across the whole face from ordinary
+    skin oil, indoor lighting, or camera flash — this is common and is
+    NOT itself evidence of oily or combination skin, versus
+(b) a real difference in oiliness BETWEEN zones of the face — this is
+    the defining feature of combination skin, and does not need to be
+    extreme to count.
 
-- "normal" is the DEFAULT. Choose it when no single pattern (oily, dry,
-  irritated) clearly dominates — tone is reasonably even, pores aren't
-  conspicuous, and any shine is mild and doesn't stand out sharply from
-  the rest of the face. Ordinary selfie lighting and minor asymmetries
-  are expected; do not require a studio-quality photo to select normal.
+- "normal": shine, if present, is roughly even across the face rather
+  than concentrated in one zone. Tone is reasonably consistent, pores
+  aren't conspicuous, no clear dry patches. Ordinary selfie lighting and
+  minor asymmetries are expected; this does not require a
+  studio-quality photo.
 - "oily": shine, enlarged pores, or a visibly slick texture across MOST
-  of the face — not just a highlight on the nose.
+  of the face — not concentrated in one zone.
 - "dry": visibly matte/dull texture, flaking, or tightness cues across
   most of the face.
-- "combination": choose ONLY when you can point to two distinct zones —
-  a T-zone that is clearly oilier/shinier than the rest of the face, AND
-  cheeks or other areas that are clearly drier/more matte by comparison.
-  The contrast between the two zones must be visibly obvious in the
-  photo, not inferred. A single shiny spot on the nose with otherwise
-  even skin is normal, not combination.
+- "combination": the forehead/nose (T-zone) is visibly shinier or oilier
+  than the cheeks, AND the cheeks look more matte, dry, or flat by
+  comparison. Judge this by the DIFFERENCE between the two zones, not
+  the absolute amount of shine in either one — a moderate T-zone
+  highlight next to noticeably drier cheeks still counts as
+  combination. Do not require the contrast to be extreme, and do not
+  downgrade a real two-zone difference to "normal" just because neither
+  zone looks dramatic on its own.
 - "sensitive": visible redness, blotchiness, or irritation is clearly
   present.
 - "unclear": no face clearly visible.
 
-If the evidence is subtle, mixed, or could reasonably go more than one
-way, choose "normal" with "confidence": "low" rather than defaulting to
-"combination" — combination describes a specific two-zone contrast, not
-a fallback for uncertainty.
+Use "confidence": "low" when the pattern is genuinely hard to read, but
+still choose the category the visible evidence best supports — don't
+default to "normal" just to avoid a judgment call.
 
 Respond with ONLY one JSON object (no markdown fences, no commentary
 outside the JSON) in exactly this shape:
@@ -802,8 +806,8 @@ function normalizeReport(report) {
   // ── care_tips aliases ────────────────────────────────────────────────────────
   if (!Array.isArray(report.care_tips)) {
     const alt = report.tips ?? report.skincare_tips ?? report.recommendations ??
-                report.advice ?? report.skin_tips ?? report.skinTips ??
-                report.careTips ?? report.care_recommendations;
+      report.advice ?? report.skin_tips ?? report.skinTips ??
+      report.careTips ?? report.care_recommendations;
     if (Array.isArray(alt)) {
       report.care_tips = alt;
     }
@@ -812,7 +816,7 @@ function normalizeReport(report) {
   // ── summary aliases ──────────────────────────────────────────────────────────
   if (!report.summary || typeof report.summary !== "string") {
     const alt = report.description ?? report.overview ?? report.analysis ??
-                report.result ?? report.skin_summary;
+      report.result ?? report.skin_summary;
     if (typeof alt === "string" && alt.trim().length >= 15) {
       report.summary = alt;
     }
@@ -832,7 +836,7 @@ function normalizeReport(report) {
   // ── observations aliases ─────────────────────────────────────────────────────
   if (!Array.isArray(report.observations) || report.observations.length === 0) {
     const alt = report.findings ?? report.skin_observations ?? report.details ??
-                report.skinObservations ?? report.characteristics;
+      report.skinObservations ?? report.characteristics;
     if (Array.isArray(alt) && alt.length > 0) {
       report.observations = alt.map((item, i) => {
         if (typeof item === "string") return { label: `Observation ${i + 1}`, detail: item };
