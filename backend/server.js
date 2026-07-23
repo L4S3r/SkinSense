@@ -13,6 +13,8 @@ import { WebSocketServer } from "ws";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+import { recommendSoaps, extractSkinProfile } from "./src/services/soapRecommendation.js";
+
 // Load .env file from backend directory or parent directory
 dotenv.config({ path: path.join(__dirname, ".env") });
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -149,6 +151,9 @@ const geminiQueue = new GeminiRequestQueue(MAX_CONCURRENT_CALLS, QUEUE_TIMEOUT_M
 // ------------------- App setup -------------------
 const app = express();
 app.use(express.json({ limit: "15mb" })); // photos as base64 need headroom
+
+// Serve Meloniq soap images statically
+app.use("/soaps", express.static(path.join(__dirname, "public/soaps")));
 
 // Enable CORS for frontend & ngrok cross-origin access
 app.use((req, res, next) => {
@@ -1061,6 +1066,11 @@ app.post("/api/analyze", async (req, res) => {
         }
         throw new Error("INCOMPLETE_REPORT");
       }
+
+      // Attach Meloniq Soap Recommendations based on extracted SkinProfile
+      const skinProfile = extractSkinProfile(parsedReport);
+      const recommendedSoaps = recommendSoaps(skinProfile, 2);
+      parsedReport.recommendedSoaps = recommendedSoaps;
 
       return { report: parsedReport };
     });

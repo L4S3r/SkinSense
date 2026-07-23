@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'models/soap_recommendation.dart';
+import 'widgets/soap_recommendation_card.dart';
 
 // ---- Palette (mirrors the web app's design tokens) ----
 const _bg = Color(0xFF12151A);
@@ -74,6 +76,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   String _host = '192.168.1.2:3000'; // sensible booth default; editable
   // Which lens is live. Start on the front (selfie) camera for a face scan.
   CameraLensDirection _lens = CameraLensDirection.front;
+  SkinReport? _lastReport;
 
   static const _hostKey = 'lumen_host';
 
@@ -198,11 +201,21 @@ class _CaptureScreenState extends State<CaptureScreen> {
           .timeout(const Duration(seconds: 90));
 
       if (res.statusCode == 200) {
+        SkinReport? report;
+        try {
+          final body = jsonDecode(res.body);
+          if (body is Map && body['report'] is Map<String, dynamic>) {
+            report = SkinReport.fromJson(body['report']);
+          }
+        } catch (_) {}
+
         setState(() {
           _state = SendState.sent;
           _message = 'Sent! Check the screen →';
+          _lastReport = report;
         });
-        // Auto-reset so the next person can scan.
+
+        // Auto-reset sending state so next person can scan.
         Future.delayed(const Duration(seconds: 4), () {
           if (mounted && _state == SendState.sent) {
             setState(() => _state = SendState.idle);
@@ -398,11 +411,116 @@ class _CaptureScreenState extends State<CaptureScreen> {
               ),
             ),
           ),
+          if (_lastReport != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showReportModal(_lastReport!),
+                icon: const Icon(Icons.soap, color: _teal, size: 20),
+                label: const Text(
+                  'View soap recommendations',
+                  style: TextStyle(color: _teal, fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: _teal),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  void _showReportModal(SkinReport report) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _bgRaised,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (ctx, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${report.skinType.toUpperCase()} SKIN',
+                  style: const TextStyle(
+                    color: _coral,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Confidence: ${report.confidence}',
+                    style: const TextStyle(color: _textMuted, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              report.summary,
+              style: const TextStyle(color: _text, fontSize: 15, height: 1.4),
+            ),
+            if (report.recommendedSoaps.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'RECOMMENDED MELONIQ SOAPS',
+                style: TextStyle(
+                  color: _teal,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...report.recommendedSoaps.map(
+                (rec) => SoapRecommendationCard(
+                  recommendation: rec,
+                  serverHost: _host,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
+
 
 /// Round "flip camera" button overlaid on the preview.
 class _CameraSwitchButton extends StatelessWidget {

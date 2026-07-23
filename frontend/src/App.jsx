@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import "./App.css";
 import brandLogo from "./assets/meloniq-logo-trimmed.png";
+import SoapRecommendationCard from "./SoapRecommendationCard";
 
 // Helper function to build API endpoint for any IP address or domain URL
 function getApiEndpoint(path = "") {
@@ -580,6 +581,21 @@ export default function App() {
               </ul>
             </div>
 
+            {report.recommendedSoaps && report.recommendedSoaps.length > 0 && (
+              <div className="soap-recommendations">
+                <h3>Recommended Meloniq Soaps</h3>
+                <div className="soap-grid">
+                  {report.recommendedSoaps.map((rec, index) => (
+                    <SoapRecommendationCard
+                      key={rec.soap?.id || index}
+                      recommendation={rec}
+                      getApiEndpoint={getApiEndpoint}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {report.caveats && (
               <p className="caveats" id="caveatsText">
                 {report.caveats}
@@ -675,6 +691,21 @@ export default function App() {
                 ))}
               </ul>
             </div>
+
+            {report.recommendedSoaps && report.recommendedSoaps.length > 0 && (
+              <div style={{ marginTop: "16px", marginBottom: "16px" }}>
+                <div className="pdf-section-heading">Recommended Meloniq Soaps</div>
+                <div className="soap-grid">
+                  {report.recommendedSoaps.map((rec, index) => (
+                    <SoapRecommendationCard
+                      key={rec.soap?.id || index}
+                      recommendation={rec}
+                      getApiEndpoint={getApiEndpoint}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 5. Caveats & Footer */}
             <div>

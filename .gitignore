@@ -8,3 +8,4 @@ frontend/.env
 __pycache__/
 .vscode
 dist/
+/graphify-out

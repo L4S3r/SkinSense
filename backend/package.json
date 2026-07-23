@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node src/services/soapRecommendation.test.js"
   },
   "engines": {
     "node": ">=18"
