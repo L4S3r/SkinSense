@@ -77,31 +77,49 @@ export function extractSkinProfile(report) {
   const validSkinTypes = ["oily", "dry", "combination", "normal", "sensitive"];
   const skinType = validSkinTypes.includes(rawSkinType) ? rawSkinType : "normal";
 
-  // If explicit concerns array is provided in report, map directly
+  const validConcernsSet = new Set([
+    "acne",
+    "hyperpigmentation",
+    "aging",
+    "dehydration",
+    "redness",
+    "dullness",
+    "sun_damage",
+    "enlarged_pores",
+    "post_hair_removal",
+  ]);
+
   let concerns = [];
-  if (Array.isArray(report.concerns)) {
-    concerns = report.concerns.filter(c => typeof c === "string");
-  } else {
-    // Scan text parts for concern keywords
+
+  // 1. If explicit structured concerns array is provided in report, filter valid items
+  if (Array.isArray(report.concerns) && report.concerns.length > 0) {
+    concerns = report.concerns.filter((c) => typeof c === "string" && validConcernsSet.has(c));
+  }
+
+  // 2. If no valid concerns were extracted from explicit array, fallback to scanning narrative details
+  if (concerns.length === 0) {
+    // Note: scan details only, excluding section labels like "Pore Visibility" to avoid false positive triggers
     const textParts = [
       report.summary || "",
       ...(Array.isArray(report.observations)
-        ? report.observations.map((o) => `${o.label || ""} ${o.detail || ""}`)
+        ? report.observations.map((o) => (typeof o === "string" ? o : `${o.detail || ""}`))
         : []),
-      ...(Array.isArray(report.care_tips) ? report.care_tips : []),
+      ...(Array.isArray(report.care_tips)
+        ? report.care_tips.map((t) => (typeof t === "string" ? t : JSON.stringify(t)))
+        : []),
       report.caveats || "",
     ].join(" ").toLowerCase();
 
     const concernKeywords = {
       acne: ["acne", "breakout", "pimple", "congest", "blackhead", "blemish"],
-      hyperpigmentation: ["hyperpigmentation", "pigment", "dark spot", "uneven tone", "discolor", "dark circle"],
-      aging: ["aging", "wrinkle", "fine line", "firm", "elasticity", "collagen"],
-      dehydration: ["dehydrat", "tight", "flak", "moisture loss"],
-      redness: ["redness", "flush", "irritat", "blotchy", "inflammation"],
-      dullness: ["dull", "radiance", "lackluster", "glow", "tired"],
-      sun_damage: ["sunburn", "photodamage", "sun damage", "uv damage"],
-      enlarged_pores: ["pore", "enlarged", "prominent pore"],
-      post_hair_removal: ["hair removal", "waxing", "shaving", "threading"],
+      hyperpigmentation: ["hyperpigmentation", "pigment", "dark spot", "uneven tone", "discolor", "dark circle", "melasma", "sun spot"],
+      aging: ["aging", "wrinkle", "fine line", "firm", "elasticity", "collagen", "sagging"],
+      dehydration: ["dehydrat", "tight", "flak", "moisture loss", "dry patch", "parched"],
+      redness: ["redness", "flush", "irritat", "blotchy", "inflammation", "erythema", "rosy"],
+      dullness: ["dull", "radiance", "lackluster", "glow", "tired", "uneven texture"],
+      sun_damage: ["sunburn", "photodamage", "sun damage", "uv damage", "photoaging"],
+      enlarged_pores: ["enlarged pore", "prominent pore", "large pore", "visible pore", "clogged pore", "dilated pore", "congested pore", "expanded pore"],
+      post_hair_removal: ["hair removal", "waxing", "shaving", "threading", "ingrown"],
     };
 
     for (const [concern, keywords] of Object.entries(concernKeywords)) {
@@ -114,7 +132,7 @@ export function extractSkinProfile(report) {
   const textToScan = [
     report.summary || "",
     ...(Array.isArray(report.observations)
-      ? report.observations.map((o) => `${o.label || ""} ${o.detail || ""}`)
+      ? report.observations.map((o) => (typeof o === "string" ? o : `${o.detail || ""}`))
       : []),
     report.caveats || "",
   ].join(" ").toLowerCase();

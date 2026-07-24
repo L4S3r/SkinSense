@@ -15,6 +15,7 @@ export default function SoapRecommendationCard({ recommendation, getApiEndpoint 
           src={imageSrc}
           alt={soap.nameEn}
           className="soap-card-image"
+          crossOrigin="anonymous"
           onError={(e) => {
             e.target.onerror = null;
             e.target.style.display = "none";

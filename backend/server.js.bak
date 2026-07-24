@@ -10,7 +10,6 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
-import { spawn } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -867,50 +866,252 @@ app.post("/api/analyze", async (req, res) => {
       return res.status(400).json({ error: "No valid image was provided." });
     }
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000/analyze";
-
-    let aiResponse;
-    try {
-      aiResponse = await fetch(aiServiceUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image }),
-      });
-    } catch (netErr) {
-      console.error("[API Gateway] Unable to reach Python AI Microservice:", netErr.message);
-      return res.status(503).json({
-        error: "AI Vision Service is currently unreachable. Please ensure the Python AI microservice is running on port 8000.",
+    if (!apiKey) {
+      return res.status(500).json({
+        error:
+          "Server is missing a Gemini API key. Set GEMINI_API_KEY in .env and restart the server.",
       });
     }
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error(`[API Gateway] Python AI Microservice returned HTTP ${aiResponse.status}:`, errText);
-      return res.status(aiResponse.status).json({
-        error: "AI processing failed on microservice: " + errText,
-      });
-    }
+    // Fix #1: Use json_schema strict mode so the model is forced to emit exactly the
+    // fields isReportValid requires — eliminating the "tips"/"summary" alias problem.
+    //
+    // Compatibility note (verified 2026-07): Gemini's OpenAI-compat endpoint
+    // (generativelanguage.googleapis.com/v1beta/openai/) accepts response_format with
+    // type="json_schema" for gemini-3.5-flash and gemini-3.1-flash-lite in real-time
+    // (non-batch) mode.  If either model rejects the schema with a 400, the error will
+    // be caught by callOpenAIWithRetry and rethrown as a non-transient error (no retry),
+    // and /api/analyze will respond with HTTP 500 + a server-log entry indicating the
+    // cause.  In that case, revert response_format to { type: "json_object" } for that
+    // model and rely on normalizeReport() + isReportValid() as the validation layer.
+    const SKIN_REPORT_SCHEMA = {
+      type: "object",
+      properties: {
+        skin_type: {
+          type: "string",
+          enum: ["oily", "dry", "combination", "normal", "sensitive", "unclear"],
+        },
+        confidence: { type: "string", enum: ["low", "medium", "high"] },
+        summary: { type: "string" },
+        concerns: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [
+              "acne",
+              "hyperpigmentation",
+              "aging",
+              "dehydration",
+              "redness",
+              "dullness",
+              "sun_damage",
+              "enlarged_pores",
+              "post_hair_removal",
+            ],
+          },
+        },
+        observations: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              detail: { type: "string" },
+            },
+            required: ["label", "detail"],
+            additionalProperties: false,
+          },
+        },
+        care_tips: { type: "array", items: { type: "string" } },
+        caveats: { type: "string" },
+      },
+      required: ["skin_type", "confidence", "summary", "concerns", "observations", "care_tips", "caveats"],
+      additionalProperties: false,
+    };
 
-    const data = await aiResponse.json();
-    let parsedReport = normalizeReport(data.report);
+    const requestParams = {
+      model: MODEL,
+      temperature: 0.2,
+      max_tokens: 2048,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "skin_report",
+          strict: true,
+          schema: SKIN_REPORT_SCHEMA,
+        },
+      },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Analyze this face photo and return the complete JSON skin report described in your instructions.",
+            },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+    };
 
-    if (!isReportValid(parsedReport)) {
-      return res.status(502).json({
-        error: "The AI skin report was incomplete or invalid.",
-      });
-    }
+    // Execute within the in-process request queue to limit concurrency and protect RPM budget.
+    //
+    // Fix #2: every executeAnalysisWithFallback call site shares a single per-request budget
+    // (GEMINI_MAX_CALLS_PER_REQUEST) via `budgetedExecute`. Once the budget is exhausted the
+    // most specific error seen so far is thrown rather than a generic INCOMPLETE_REPORT.
+    const { report } = await geminiQueue.run(async () => {
+      // Tracks the total number of Gemini calls (across all retry paths) for this request.
+      let requestCallsUsed = 0;
+      // Tracks the most specific error seen during this request so we can surface it
+      // instead of a generic INCOMPLETE_REPORT if things go wrong (Fix #3).
+      let mostSpecificErr = null;
 
-    // Attach Meloniq Soap Recommendations based on extracted SkinProfile
-    const skinProfile = extractSkinProfile(parsedReport);
-    const recommendedSoaps = recommendSoaps(skinProfile, 2);
-    parsedReport.recommendedSoaps = recommendedSoaps;
+      function isQuotaOrOverloadErr(e) {
+        return (
+          e &&
+          (e.quotaType === "RPD" ||
+            e.quotaType === "RPM" ||
+            e.quotaType === "TPM" ||
+            e.status === 429 ||
+            e.status === 502 ||
+            e.status === 503 ||
+            e.status === 504 ||
+            e.isCallTimeout)
+        );
+      }
+
+      // Wrapped executeAnalysisWithFallback that enforces the per-request call budget.
+      // Fix #3: budget is charged once per raw HTTP attempt inside callOpenAIWithRetry
+      // via the onAttempt callback, not once per high-level budgetedExecute call.  This
+      // means each retry within callOpenAIWithRetry consumes its own budget slot, so a
+      // 3-retry primary round costs 3 slots, not 1.
+      function onAttempt() {
+        if (requestCallsUsed >= GEMINI_MAX_CALLS_PER_REQUEST) {
+          const budgetErr = new Error("BUDGET_EXHAUSTED");
+          budgetErr.isBudgetExhausted = true;
+          console.warn(
+            `[Gemini API] 🛑 Per-request call budget exhausted (${requestCallsUsed}/${GEMINI_MAX_CALLS_PER_REQUEST} raw HTTP attempts). ` +
+            `Aborting further Gemini calls for this request.`
+          );
+          throw budgetErr;
+        }
+        requestCallsUsed += 1;
+        console.log(
+          `[Gemini API] 📋 Request call budget: ${requestCallsUsed}/${GEMINI_MAX_CALLS_PER_REQUEST} raw HTTP attempts used.`
+        );
+      }
+
+      async function budgetedExecute(params) {
+        // onAttempt is passed into callOpenAIWithRetry (and forwarded by
+        // executeAnalysisWithFallback) so budget is charged per raw HTTP call.
+        try {
+          const result = await executeAnalysisWithFallback(params, onAttempt);
+          return result;
+        } catch (e) {
+          // Record the most specific error seen across all attempts.
+          if (isQuotaOrOverloadErr(e) && !isQuotaOrOverloadErr(mostSpecificErr)) {
+            mostSpecificErr = e;
+          } else if (!mostSpecificErr) {
+            mostSpecificErr = e;
+          }
+          throw e;
+        }
+      }
+
+      let response = await budgetedExecute(requestParams);
+      let choice = response.choices?.[0];
+      let finishReason = choice?.finish_reason;
+      let raw = choice?.message?.content || "";
+      let parsedReport = null;
+
+      if (finishReason === "length" || finishReason === "max_tokens") {
+        console.warn(
+          `[Gemini API] Output truncated by max_tokens (finish_reason: ${finishReason}). Retrying with max_tokens: 2048...`
+        );
+        try {
+          response = await budgetedExecute({
+            ...requestParams,
+            max_tokens: 2048,
+            temperature: 0.1,
+          });
+          choice = response.choices?.[0];
+          finishReason = choice?.finish_reason;
+          raw = choice?.message?.content || "";
+        } catch (truncRetryErr) {
+          if (truncRetryErr.isBudgetExhausted) throw truncRetryErr;
+          // Non-budget error on truncation retry: log and fall through to parse what we have.
+          console.warn("[Gemini API] Truncation retry failed:", truncRetryErr.message);
+        }
+      }
+
+      try {
+        parsedReport = normalizeReport(safeParseJSON(raw));
+      } catch (parseErr) {
+        console.error("[Gemini API] JSON parse error on raw output:\n", raw);
+      }
+
+      if (!isReportValid(parsedReport)) {
+        console.warn("[Gemini API] Report was invalid or incomplete. Retrying vision request...");
+        try {
+          response = await budgetedExecute({
+            ...requestParams,
+            max_tokens: 2048,
+            temperature: 0.1,
+          });
+          raw = response.choices?.[0]?.message?.content || "";
+          parsedReport = normalizeReport(safeParseJSON(raw));
+        } catch (retryErr) {
+          // Fix #3: don't swallow quota/overload errors — record and re-classify.
+          if (retryErr.isBudgetExhausted) throw retryErr;
+          if (isQuotaOrOverloadErr(retryErr)) {
+            mostSpecificErr = retryErr;
+          }
+          console.warn(
+            "[Gemini API] Invalid-report retry failed:",
+            retryErr.quotaType || retryErr.status || retryErr.message
+          );
+        }
+      }
+
+      if (!isReportValid(parsedReport)) {
+        console.error("[Gemini API] Unable to produce complete report. Raw content:\n", raw);
+        // Fix #3: if a quota/overload error occurred during any attempt, throw it so
+        // the outer handler sends the accurate error message rather than INCOMPLETE_REPORT.
+        if (mostSpecificErr && isQuotaOrOverloadErr(mostSpecificErr)) {
+          throw mostSpecificErr;
+        }
+        throw new Error("INCOMPLETE_REPORT");
+      }
+
+      // Attach Meloniq Soap Recommendations based on extracted SkinProfile
+      const skinProfile = extractSkinProfile(parsedReport);
+      const recommendedSoaps = recommendSoaps(skinProfile, 2);
+      parsedReport.recommendedSoaps = recommendedSoaps;
+
+      return { report: parsedReport };
+    });
 
     // Push finished valid report to any booth screens, then return to caller.
-    broadcastToDisplays({ type: "report", report: parsedReport, image });
+    broadcastToDisplays({ type: "report", report, image });
 
-    return res.json({ report: parsedReport });
+    return res.json({ report });
   } catch (err) {
+    if (err.message === "INCOMPLETE_REPORT") {
+      return res.status(502).json({
+        error: "The AI skin report was incomplete or truncated. Please retake your photo and scan again.",
+      });
+    }
+
     console.error("[API Analyze Error]", err.message);
+
+    if (err.isQueueTimeout) {
+      return res.status(503).json({
+        error:
+          "The AI scanner is currently busy handling other requests. Please wait a few seconds and try scanning again.",
+      });
+    }
 
     if (err.quotaType === "RPD") {
       return res.status(429).json({
@@ -943,70 +1144,26 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
+    if (err.status === 404 || (err.message && err.message.includes("404"))) {
+      return res.status(404).json({
+        error: `The requested AI model "${MODEL}" was not found. Please check SKIN_ANALYSIS_MODEL in .env.`,
+      });
+    }
+
     return res.status(500).json({
-      error: "An unexpected error occurred during skin analysis. " + err.message,
+      error: "Something went wrong while analyzing the photo. Check the server logs for details.",
     });
   }
-});
-
-// --- Auto-spawn Python AI Microservice ---
-const aiServiceDir = path.resolve(__dirname, "../ai_service");
-let pythonAiProcess = null;
-
-function ensureAiServiceRunning() {
-  const pythonCmd = process.platform === "win32" ? "python" : "python3";
-  console.log(`\n🐍 [Backend Spawner] Auto-starting Python AI Microservice...`);
-
-  pythonAiProcess = spawn(pythonCmd, ["-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"], {
-    cwd: aiServiceDir,
-    stdio: "pipe",
-    shell: true,
-  });
-
-  pythonAiProcess.stdout.on("data", (data) => {
-    const msg = data.toString().trim();
-    if (msg) console.log(`   [Python AI] ${msg}`);
-  });
-
-  pythonAiProcess.stderr.on("data", (data) => {
-    const msg = data.toString().trim();
-    if (msg) console.error(`   [Python AI] ${msg}`);
-  });
-
-  pythonAiProcess.on("error", (err) => {
-    console.error("⚠️  [Backend Spawner] Failed to start Python AI Microservice:", err.message);
-  });
-}
-
-function cleanupAiService() {
-  if (pythonAiProcess) {
-    try {
-      if (process.platform === "win32") {
-        spawn("taskkill", ["/pid", pythonAiProcess.pid, "/f", "/t"]);
-      } else {
-        pythonAiProcess.kill("SIGINT");
-      }
-    } catch (_) {}
-  }
-}
-
-process.on("SIGINT", () => {
-  cleanupAiService();
-  process.exit(0);
-});
-
-process.on("SIGTERM", () => {
-  cleanupAiService();
-  process.exit(0);
 });
 
 const PORT = process.env.PORT || 3000;
 // Listen on 0.0.0.0 so external clients / phones can reach the server over LAN
 server.listen(PORT, "0.0.0.0", () => {
-  ensureAiServiceRunning();
-  console.log(`\n✨ Meloniq Backend Gateway running on port ${PORT}`);
+  console.log(`\n✨ Meloniq Standalone Backend API running on port ${PORT}`);
   console.log(`   Health Check   : http://localhost:${PORT}/api/health`);
   console.log(`   API Endpoint   : http://localhost:${PORT}/api/analyze`);
-  console.log(`   Python AI      : http://localhost:8000/health`);
-  console.log(`   WebSocket      : ws://localhost:${PORT}/ws/display\n`);
+  console.log(`   WebSocket      : ws://localhost:${PORT}/ws/display`);
+  console.log(`   Primary Model  : ${MODEL}`);
+  console.log(`   Fallback Model : ${FALLBACK_MODEL || "None (Set FALLBACK_MODEL in .env to enable)"}`);
+  console.log(`   Max Concurrency: ${MAX_CONCURRENT_CALLS} (Queue timeout: ${QUEUE_TIMEOUT_MS}ms)\n`);
 });
