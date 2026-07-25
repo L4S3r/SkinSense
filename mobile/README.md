@@ -44,6 +44,22 @@ http://<backend-ip>:3000/api/health
 ```
 If it returns `{"status":"ok"...}`, the mobile app will connect immediately!
 
+## App Structure & Components
+
+```
+mobile/
+├── lib/
+│   ├── main.dart                          # Main capture screen, camera feed controller, and POST runner
+│   ├── models/
+│   │   └── soap_recommendation.dart       # Data model for parsed organic soap recommendation objects
+│   └── widgets/
+│       └── soap_recommendation_card.dart  # Custom Flutter card widget rendering soap recommendations
+├── test/
+│   └── widget_test.dart                  # Flutter smoke & widget tests
+├── pubspec.yaml                           # Flutter package manifest & dependencies
+└── codemagic.yaml                         # CI/CD pipeline configuration for automated iOS/Android builds
+```
+
 ## Prerequisites (both platforms)
 
 - Flutter 3.x (`flutter doctor` should be green)

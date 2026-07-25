@@ -46,21 +46,65 @@ that way.
 ## Layout
 
 ```
-server.js                 # Express + Gemini + WebSocket (/ws/display). ES modules.
-src/                      # React frontend
-  main.jsx                # React app entrypoint
-  App.jsx                 # Core app component (web webcam + display mode via WS)
-  App.css                 # Custom Skincare brand design tokens, styles, and animations
-index.html                # Root HTML template for Vite
-vite.config.js            # Vite configurations with server proxies
-public_vanilla/           # Backup folder containing vanilla JS/CSS assets
-dist/                     # Vite production build output (served by server.js, gitignored)
-mobile/                   # Flutter capture app (Android)
-  lib/main.dart           # single screen: front/rear camera → POST /api/analyze
-.env.example              # copy to .env, set GEMINI_API_KEY
-FaceChain.py              # ANCESTOR Colab notebook only — not run by the app. Don't wire it in.
-booth-connect.ps1         # adb reverse helper for the browser-fallback booth path
+backend/                  # Modular Express API + WebSocket server
+  server.js               # Lightweight entry point (~40 lines) assembling Express, WebSocket & routes
+  ai_service/             # Internal Python FastAPI AI Vision Microservice (main.py, requirements.txt)
+  src/
+    config/
+      index.js            # Environment variables & runtime constants
+    routes/
+      api.js              # Express API routes (/, /api/health, /api/analyze)
+    services/
+      geminiClient.js     # Gemini OpenAI-compat client, concurrency queue, quota tracking & circuit breaker
+      reportFormatter.js  # System prompt, JSON parser, normalization & validation
+      soapRecommendation.js # Extracts skin profile & ranks matched organic soaps
+      processSpawner.js   # Lifecycle manager & spawner for Python AI Microservice
+    data/
+      soapCatalog.js      # Catalog of botanical soaps with skin concerns & active ingredients
+    websocket/
+      displayChannel.js   # WebSocket server (/ws/display) & booth display broadcast runner
+frontend/                 # Modular React frontend (Vite)
+  src/
+    main.jsx              # React entrypoint
+    App.jsx               # Decoupled App container assembling state & components
+    App.css               # Skincare brand design tokens, styles, and animations
+    config/
+      api.js              # API & WebSocket URL builder helpers
+    utils/
+      pdfExporter.js      # html2canvas + jsPDF A4 export utility
+    components/
+      Header.jsx          # Brand logo & tagline header
+      Footer.jsx          # Cosmetic disclaimer footer
+      ScanPanel.jsx       # Camera viewfinder & capture controls
+      ReportPanel.jsx     # Analyzed skin report card & care notes
+      ErrorPanel.jsx      # Error state display card & retry button
+      PdfExportTemplate.jsx # Printable off-screen A4 PDF document template
+      SoapRecommendationCard.jsx # Card rendering matched botanical soaps
+  index.html              # Vite HTML template
+  vite.config.js          # Vite config & dev server proxies
+public_vanilla/           # Legacy backup folder containing vanilla JS/CSS assets
+mobile/                   # Flutter capture app (Android & iOS)
+  lib/main.dart           # Main capture screen & camera controller
+  lib/models/soap_recommendation.dart # Soap recommendation data model
+  lib/widgets/soap_recommendation_card.dart # Flutter widget for soap recommendations
+.env.example              # Template — copy to .env, set GEMINI_API_KEY
+FaceChain.py              # ANCESTOR Colab notebook only — not run by the app.
+booth-connect.ps1         # ADB reverse helper for browser fallback booth mode
 ```
+
+## Knowledge Graph & AI Workflow (`/graphify`)
+
+This repository uses **Graphify** to maintain a queryable knowledge graph of the codebase architecture, module relationships, and dependencies.
+
+- **Pre-built Graph**: The knowledge graph lives in `graphify-out/graph.json` with visual representation in `graphify-out/graph.html` and narrative report in `graphify-out/GRAPH_REPORT.md`.
+- **Querying Codebase Context**: Before making major structural refactors, AI agents can query the graph for contextual dependencies:
+  ```bash
+  /graphify query "<question>"     # Query graph for cross-module relationships
+  ```
+- **Updating the Graph**: Whenever files or modules are created, decoupled, or refactored, AI agents MUST update the graph:
+  ```bash
+  /graphify                        # Re-run graphify pipeline to update graph.json & GRAPH_REPORT.md
+  ```
 
 ## Backend contract
 
@@ -80,7 +124,8 @@ booth-connect.ps1         # adb reverse helper for the browser-fallback booth pa
 | var | default | note |
 |---|---|---|
 | `GEMINI_API_KEY` | — | required (from Google AI Studio) |
-| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | options: `gemini-3.5-flash` (balanced), `gemini-3.5-flash-lite` (<1s fast), `gemini-3.5-pro` (high precision) |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.6-flash` | standard model (fallback: `gemini-3.5-flash-lite`, options: `gemini-3.5-pro`) |
+| `FALLBACK_MODEL` | `gemini-3.5-flash-lite` | secondary fallback model when primary is quota-exhausted |
 | `PORT` | `3000` | port backend listens on |
 
 ### Frontend (`frontend/.env`)
@@ -111,6 +156,12 @@ flutter build apk --debug     # ~9 min first build; the camera KGP warning is be
 There is no automated JS test suite. Flutter has one smoke test
 (`mobile/test/widget_test.dart`). The real backend check is a live POST +
 WebSocket broadcast round-trip against a valid key.
+
+## Modularity & Code Organization Rules (Strict Guideline)
+
+- **No Monolithic Files**: Never write or group core application logic, routes, configurations, or services into a single big monolithic file. Always decouple features into focused, single-responsibility files and subdirectories (`src/config/`, `src/routes/`, `src/services/`, `src/websocket/`, `src/components/`).
+- **Single Responsibility Principle**: Each service file must handle one domain (e.g., `geminiClient.js` for API calls & circuit breaker, `reportFormatter.js` for parsing/validation, `displayChannel.js` for WebSockets, `processSpawner.js` for process management).
+- **Maintainability & Easy Debugging**: Keeping files small and decoupled (<150-200 lines) ensures features are easy to debug, test, and extend without risking side effects across unrelated logic.
 
 ## Conventions / expectations
 

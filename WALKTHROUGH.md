@@ -35,23 +35,61 @@ Meloniq kept only the **webcam-capture pattern** and rebuilt it as a standalone 
 
 ```
 Face-skin/
-├── server.js               # Express server + Gemini call + WebSocket channel (serves dist/)
-├── package.json            # deps: express, openai, ws, react, react-dom, jspdf, html2canvas, vite
-├── vite.config.js          # Vite config with React plugin and proxy settings
-├── index.html              # Vite HTML entrypoint template with Google Fonts
-├── .env.example            # committed template — copy to .env
-├── .env                    # your real GEMINI_API_KEY (gitignored)
-├── booth-connect.ps1       # adb reverse helper for browser fallback
-├── FaceChain.py            # original Colab notebook (ancestor)
-├── README.md               # setup + booth + PDF export docs
-├── WALKTHROUGH.md          # this file
-├── src/                    # React frontend source files
-│   ├── main.jsx            # React app mount script
-│   ├── App.jsx             # Camera capture, report rendering, display mode, A4 PDF export template
-│   └── App.css             # Meloniq brand design system tokens & animations
+├── backend/                # Modular Express API & WebSocket backend
+│   ├── server.js           # Lightweight server entry point (~40 lines)
+│   ├── ai_service/         # Internal Python FastAPI AI Vision Microservice (main.py, requirements.txt)
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── index.js              # Environment & configuration loading
+│   │   ├── routes/
+│   │   │   └── api.js                # Express API routes (/, /api/health, /api/analyze)
+│   │   ├── services/
+│   │   │   ├── geminiClient.js       # Gemini OpenAI-compat client, queue & circuit breaker
+│   │   │   ├── reportFormatter.js    # System prompt, JSON parser, normalization & validation
+│   │   │   ├── soapRecommendation.js # Organic soap recommendation & scoring algorithm
+│   │   │   └── processSpawner.js     # Lifecycle manager for Python AI Microservice
+│   │   ├── data/
+│   │   │   └── soapCatalog.js        # Catalog of botanical soaps with key actives & targets
+│   │   ├── websocket/
+│   │   │   └── displayChannel.js     # WebSocket server (/ws/display) & booth display channel
+│   │   └── types/
+│   │       └── soap.js               # JSDoc type definitions
+│   ├── package.json        # backend deps: express, openai, ws, dotenv
+│   └── .env.example        # template — copy to .env
+├── frontend/               # Modular React frontend (Vite)
+│   ├── src/
+│   │   ├── main.jsx        # React entrypoint
+│   │   ├── App.jsx         # Decoupled App container assembling state & components
+│   │   ├── App.css         # Skincare brand design tokens, styles, and animations
+│   │   ├── config/
+│   │   │   └── api.js      # API & WebSocket URL builder helpers
+│   │   ├── utils/
+│   │   │   └── pdfExporter.js # html2canvas + jsPDF A4 export utility
+│   │   └── components/
+│   │       ├── Header.jsx   # Brand logo & tagline header
+│   │       ├── Footer.jsx   # Cosmetic disclaimer footer
+│   │       ├── ScanPanel.jsx # Camera viewfinder & capture controls
+│   │       ├── ReportPanel.jsx # Analyzed skin report card & care notes
+│   │       ├── ErrorPanel.jsx  # Error state display card & retry button
+│   │       ├── PdfExportTemplate.jsx # Printable off-screen A4 PDF document template
+│   │       └── SoapRecommendationCard.jsx # Card rendering tailored botanical soaps
+│   ├── index.html          # Vite HTML entrypoint template
+│   ├── vite.config.js      # Vite config with React plugin and proxy settings
+│   └── package.json        # frontend deps: react, react-dom, jspdf, html2canvas, vite
+├── booth-connect.ps1       # ADB reverse helper for browser fallback
+├── FaceChain.py            # Original Colab notebook (ancestor)
+├── README.md               # Setup + booth + PDF export docs
+├── WALKTHROUGH.md          # This file
 ├── public_vanilla/         # Backup of legacy vanilla JS/CSS assets
 └── mobile/                 # Flutter capture app (booth phone station)
-    └── lib/main.dart       # front-camera capture → POST to backend
+    ├── lib/
+    │   ├── main.dart       # Front-camera capture → POST to backend
+    │   ├── models/
+    │   │   └── soap_recommendation.dart # Soap recommendation data model
+    │   └── widgets/
+    │       └── soap_recommendation_card.dart # Flutter widget for soap recommendations
+    └── test/
+        └── widget_test.dart # Flutter test suite
 ```
 
 ---
@@ -61,7 +99,7 @@ Face-skin/
 An ES-module Express app (`"type": "module"` in `package.json`).
 
 ### API key loading & Gemini Client
-The key is read from `GEMINI_API_KEY` in `.env` (loaded by `dotenv/config`). Gemini is accessed via its OpenAI-compatible endpoint at `https://generativelanguage.googleapis.com/v1beta/openai/` using the `openai` SDK. The model defaults to `gemini-3.5-flash`.
+The key is read from `GEMINI_API_KEY` in `.env` (loaded by `dotenv/config`). Gemini is accessed via its OpenAI-compatible endpoint at `https://generativelanguage.googleapis.com/v1beta/openai/` using the `openai` SDK. The model defaults to `gemini-3.6-flash`, with `gemini-3.5-flash-lite` configured as fallback.
 
 ### The booth display channel
 Express is wrapped in an explicit `http.createServer(app)` with a `WebSocketServer` attached at `/ws/display`. When the mobile app POSTs a photo, `broadcastToDisplays(payload)` sends `{ type: "report", report, image }` to all connected screens.

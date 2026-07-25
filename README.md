@@ -94,16 +94,16 @@ The photo is only ever sent to Gemini for that single request — this app does 
 | Env var | Default | What it does |
 |---|---|---|
 | `GEMINI_API_KEY` | _(none)_ | Your Google Gemini API key (from https://aistudio.google.com/apikey). Required. |
-| `SKIN_ANALYSIS_MODEL` | `gemini-3.5-flash` | Vision model used for skin analysis. Options below. |
+| `SKIN_ANALYSIS_MODEL` | `gemini-3.6-flash` | Vision model used for skin analysis. Standard model. |
+| `FALLBACK_MODEL` | `gemini-3.5-flash-lite` | Secondary fallback model when primary is quota-exhausted. |
 | `PORT` | `3000` | Port the backend server listens on. |
 
 #### Available Gemini Models (Pros & Cons):
 
-- `gemini-3.5-flash` **(Default - Recommended)**:
-  - **Pros**: Balanced vision accuracy, detailed skin observations, fast latency (1-2s), generous free tier quotas.
-  - **Cons**: Slightly slower than `flash-lite`.
-- `gemini-3.5-flash-lite`:
-  - **Pros**: Ultra-fast sub-second latency (<1s response times), lowest token cost, ideal for high-traffic live booths.
+- `gemini-3.6-flash` **(Default - Standard Model)**:
+  - **Pros**: Outstanding vision accuracy, detailed skin observations, fast latency, optimal schema adherence.
+- `gemini-3.5-flash-lite` **(Recommended Fallback)**:
+  - **Pros**: Ultra-fast sub-second latency (<1s response times), lowest token cost, ideal for high-traffic live booths and auto-fallback.
   - **Cons**: Slightly less detailed observation notes on subtle redness/tone nuances.
 - `gemini-3.5-pro`:
   - **Pros**: Highest precision vision reasoning, handles uneven lighting best, rich dermatological observation notes.
@@ -199,13 +199,45 @@ Then open **http://localhost:3000** (not the LAN IP) in the phone's browser. `bo
 
 ```
 Face-skin/
-├── backend/                # Standalone Express & WebSocket backend entity
-│   ├── server.js           # Express + Gemini call + WebSocket display channel (serves dist/)
+├── backend/                # Modular Express & WebSocket backend entity
+│   ├── server.js           # Lightweight server entry point (~40 lines)
+│   ├── ai_service/         # Internal Python FastAPI AI Vision Microservice (main.py, requirements.txt)
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── index.js              # Environment & configuration loading
+│   │   ├── routes/
+│   │   │   └── api.js                # Express API routes (/, /api/health, /api/analyze)
+│   │   ├── services/
+│   │   │   ├── geminiClient.js       # Gemini OpenAI-compat client, queue & circuit breaker
+│   │   │   ├── reportFormatter.js    # System prompt, JSON parser, normalization & validation
+│   │   │   ├── soapRecommendation.js # Organic soap recommendation & scoring algorithm
+│   │   │   └── processSpawner.js     # Lifecycle manager for Python AI Microservice
+│   │   ├── data/
+│   │   │   └── soapCatalog.js        # Catalog of botanical soaps with skin concerns & ingredients
+│   │   ├── websocket/
+│   │   │   └── displayChannel.js     # WebSocket server (/ws/display) & booth display channel
+│   │   └── types/
+│   │       └── soap.js               # JSDoc type definitions for soap entities
 │   ├── package.json        # backend deps: express, openai, ws, dotenv
 │   ├── .env.example        # template — copy to .env
 │   └── .env                # your real key (gitignored)
-├── frontend/               # Standalone React frontend entity
-│   ├── src/                # React source files (App.jsx, App.css, main.jsx)
+├── frontend/               # Modular React frontend (Vite)
+│   ├── src/
+│   │   ├── main.jsx        # React entrypoint
+│   │   ├── App.jsx         # Decoupled App container assembling state & components
+│   │   ├── App.css         # Skincare brand design tokens, styles, and animations
+│   │   ├── config/
+│   │   │   └── api.js      # API & WebSocket URL builder helpers
+│   │   ├── utils/
+│   │   │   └── pdfExporter.js # html2canvas + jsPDF A4 export utility
+│   │   └── components/
+│   │       ├── Header.jsx   # Brand logo & tagline header
+│   │       ├── Footer.jsx   # Cosmetic disclaimer footer
+│   │       ├── ScanPanel.jsx # Camera viewfinder & capture controls
+│   │       ├── ReportPanel.jsx # Analyzed skin report card & care notes
+│   │       ├── ErrorPanel.jsx  # Error state display card & retry button
+│   │       ├── PdfExportTemplate.jsx # Printable off-screen A4 PDF document template
+│   │       └── SoapRecommendationCard.jsx # Card rendering matched botanical soaps
 │   ├── index.html          # Vite HTML entrypoint template with Google Fonts
 │   ├── vite.config.js      # Vite config with React plugin and proxy settings
 │   └── package.json        # frontend deps: react, react-dom, jspdf, html2canvas, vite
@@ -216,7 +248,14 @@ Face-skin/
 ├── WALKTHROUGH.md          # full guided tour of the codebase
 ├── public_vanilla/         # Backup of legacy vanilla JS/CSS assets
 └── mobile/                 # Flutter capture app (booth phone station)
-    └── lib/main.dart       # front-camera capture → POST to backend
+    ├── lib/
+    │   ├── main.dart       # front-camera capture → POST to backend
+    │   ├── models/
+    │   │   └── soap_recommendation.dart # Soap recommendation data model
+    │   └── widgets/
+    │       └── soap_recommendation_card.dart # Flutter widget for soap recommendations
+    └── test/
+        └── widget_test.dart # Flutter widget smoke test
 ```
 
 ## Notes / possible next steps
