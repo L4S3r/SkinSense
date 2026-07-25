@@ -87,7 +87,6 @@ mobile/                   # Flutter capture app (Android & iOS)
   lib/main.dart           # Main capture screen & camera controller
   lib/models/soap_recommendation.dart # Soap recommendation data model
   lib/widgets/soap_recommendation_card.dart # Flutter widget for soap recommendations
-.env.example              # Template — copy to .env, set GEMINI_API_KEY
 FaceChain.py              # ANCESTOR Colab notebook only — not run by the app.
 booth-connect.ps1         # ADB reverse helper for browser fallback booth mode
 ```

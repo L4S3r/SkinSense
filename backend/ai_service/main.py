@@ -18,7 +18,6 @@ from pathlib import Path
 env_paths = [
     Path(__file__).parent / ".env",
     Path(__file__).parent.parent / ".env",
-    Path(__file__).parent.parent.parent / ".env",
 ]
 
 for p in env_paths:

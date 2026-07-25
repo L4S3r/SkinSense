@@ -4,9 +4,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load .env file from backend directory or parent directory
+// Load .env file from backend directory
 dotenv.config({ path: path.join(__dirname, "../../.env") });
-dotenv.config({ path: path.join(__dirname, "../../../.env") });
 
 export const apiKey = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim();
 if (!apiKey) {
