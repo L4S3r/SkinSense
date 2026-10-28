@@ -4,8 +4,35 @@ import json
 import logging
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError, field_validator
 import httpx
+
+from enum import Enum
+from pathlib import Path
+
+taxonomy_path = (
+    Path(__file__).resolve().parent.parent
+    / "shared"
+    / "skin-taxonomy.json"
+)
+with taxonomy_path.open(encoding="utf-8") as file: taxonomy = json.load(file)
+
+SKIN_TYPES = taxonomy["skinTypes"]
+UNCLEAR_SKIN_TYPE = taxonomy["unclearType"]
+
+try:
+    SkinTypeEnum = Enum(
+        "SkinTypeEnum",
+        {skin_type: skin_type for skin_type in SKIN_TYPES + [UNCLEAR_SKIN_TYPE]},
+        type=str,
+    )
+except TypeError:
+    # Python < 3.11 lacks the type= parameter; a plain Enum still
+    # validates and serializes by value with Pydantic v2.
+    SkinTypeEnum = Enum(
+        "SkinTypeEnum",
+        {skin_type: skin_type for skin_type in SKIN_TYPES + [UNCLEAR_SKIN_TYPE]},
+    )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +57,7 @@ for p in env_paths:
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 PRIMARY_MODEL = os.getenv("SKIN_ANALYSIS_MODEL", "gemini-3.6-flash")
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "gemini-3.5-flash-lite")
-OPENAI_COMPAT_URL = "https://generativelanguage.googleapis.com/v1beta/openai/v1/chat/completions"
+OPENAI_COMPAT_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
 SYSTEM_PROMPT = """You are an expert cosmetic skincare analyst. Your task is to analyze a single user-provided face photo and generate a concise, friendly, and purely cosmetic skin-type report.
 
@@ -92,7 +119,7 @@ class ObservationItem(BaseModel):
 
 
 class SkinReport(BaseModel):
-    skin_type: str
+    skin_type: SkinTypeEnum
     confidence: str
     summary: str
     concerns: List[str] = []
@@ -100,9 +127,28 @@ class SkinReport(BaseModel):
     care_tips: List[str]
     caveats: str
 
+    @field_validator("skin_type", mode="before")
+    @classmethod
+    def _normalize_skin_type(cls, value):
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+
 
 class AnalyzeResponse(BaseModel):
     report: SkinReport
+
+
+def validate_report(parsed_report: dict) -> SkinReport:
+    """Turn an invalid model payload into a client-safe upstream error."""
+    try:
+        return SkinReport.model_validate(parsed_report)
+    except ValidationError as exc:
+        logger.warning("Model output failed schema validation: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="Model output did not match the expected skin report schema.",
+        ) from exc
 
 
 def parse_and_validate_json(raw_text: str) -> dict:
@@ -183,13 +229,13 @@ async def analyze(request: AnalyzeRequest):
     logger.info(f"Received analysis request for model {PRIMARY_MODEL}")
     try:
         parsed_report = await call_gemini_api(PRIMARY_MODEL, request.image)
-        return {"report": parsed_report}
+        return {"report": validate_report(parsed_report)}
     except HTTPException as e:
         if e.status_code == 429 and FALLBACK_MODEL and FALLBACK_MODEL != PRIMARY_MODEL:
             logger.warning(f"Primary model {PRIMARY_MODEL} rate limited. Attempting fallback {FALLBACK_MODEL}...")
             try:
                 parsed_report = await call_gemini_api(FALLBACK_MODEL, request.image)
-                return {"report": parsed_report}
+                return {"report": validate_report(parsed_report)}
             except Exception as fallback_err:
                 logger.error(f"Fallback model also failed: {fallback_err}")
                 raise e
