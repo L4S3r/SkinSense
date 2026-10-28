@@ -1,4 +1,5 @@
 import { SOAP_CATALOG } from "../data/soapCatalog.js";
+import { SKIN_CONCERNS, SKIN_TYPES } from "../types/soap.js";
 
 const CONCERN_MATCH_POINTS = 3;
 const SKIN_TYPE_MATCH_POINTS = 1;
@@ -74,20 +75,9 @@ export function extractSkinProfile(report) {
   }
 
   const rawSkinType = (report.skin_type || "normal").toLowerCase();
-  const validSkinTypes = ["oily", "dry", "combination", "normal", "sensitive"];
-  const skinType = validSkinTypes.includes(rawSkinType) ? rawSkinType : "normal";
+  const skinType = SKIN_TYPES.includes(rawSkinType) ? rawSkinType : "normal";
 
-  const validConcernsSet = new Set([
-    "acne",
-    "hyperpigmentation",
-    "aging",
-    "dehydration",
-    "redness",
-    "dullness",
-    "sun_damage",
-    "enlarged_pores",
-    "post_hair_removal",
-  ]);
+  const validConcernsSet = new Set(SKIN_CONCERNS);
 
   let concerns = [];
 

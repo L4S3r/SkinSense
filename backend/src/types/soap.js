@@ -1,5 +1,5 @@
 /**
- * @typedef {"oily" | "dry" | "combination" | "normal" | "sensitive"} SkinType
+ * @typedef {"oily" | "dry" | "combination" | "normal" | "sensitive" | "unclear"} SkinType
  * @typedef {"acne" | "hyperpigmentation" | "aging" | "dehydration" | "redness" | "dullness" | "sun_damage" | "enlarged_pores" | "post_hair_removal"} SkinConcern
  *
  * @typedef {Object} SkinProfile
