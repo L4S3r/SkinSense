@@ -1,3 +1,10 @@
+import { SKIN_TYPES } from "../types/soap.js";
+
+const VALID_SKIN_TYPES = new Set([
+  ...SKIN_TYPES,
+  "unclear",
+]);
+
 export function safeParseJSON(rawInput) {
   if (!rawInput || typeof rawInput !== "string") {
     throw new Error("Empty or non-string input");
@@ -83,6 +90,10 @@ export function safeParseJSON(rawInput) {
 export function normalizeReport(report) {
   if (!report || typeof report !== "object") return report;
 
+  if (typeof report.skin_type === "string") {
+  report.skin_type = report.skin_type.trim().toLowerCase();
+  }
+
   if (!Array.isArray(report.care_tips)) {
     const alt = report.tips ?? report.skincare_tips ?? report.recommendations ??
       report.advice ?? report.skin_tips ?? report.skinTips ??
@@ -127,7 +138,7 @@ export function normalizeReport(report) {
 
 export function isReportValid(report) {
   if (!report || typeof report !== "object") return false;
-  if (!report.skin_type || typeof report.skin_type !== "string") return false;
+  if (typeof report.skin_type !== "string" ||  !VALID_SKIN_TYPES.has(report.skin_type)) return false;
   if (!report.summary || typeof report.summary !== "string" || report.summary.trim().length < 15) return false;
   if (!Array.isArray(report.care_tips) || report.care_tips.length === 0) return false;
   if (!Array.isArray(report.observations) || report.observations.length === 0) return false;

@@ -25,15 +25,18 @@
  * @property {string} reasoning
  */
 
-export const SKIN_TYPES = ["oily", "dry", "combination", "normal", "sensitive"];
-export const SKIN_CONCERNS = [
-  "acne",
-  "hyperpigmentation",
-  "aging",
-  "dehydration",
-  "redness",
-  "dullness",
-  "sun_damage",
-  "enlarged_pores",
-  "post_hair_removal",
-];
+import { readFileSync } from "node:fs";
+
+import { fileURLToPath } from "node:url";
+
+const taxonomyPath = fileURLToPath(
+  new URL("../../shared/skin-taxonomy.json", import.meta.url)
+);
+
+const taxonomy = JSON.parse(
+  readFileSync(taxonomyPath, "utf8")
+);
+
+export const SKIN_TYPES = taxonomy.skinTypes;
+export const SKIN_CONCERNS = taxonomy.skinConcerns;
+export const UNCLEAR_SKIN_TYPE = taxonomy.unclearType;

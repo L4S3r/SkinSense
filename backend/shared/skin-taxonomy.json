@@ -1,0 +1,21 @@
+{
+  "skinTypes": [
+    "oily",
+    "dry",
+    "combination",
+    "normal",
+    "sensitive"
+  ],
+  "unclearType": "unclear",
+  "skinConcerns": [
+    "acne",
+    "hyperpigmentation",
+    "aging",
+    "dehydration",
+    "redness",
+    "dullness",
+    "sun_damage",
+    "enlarged_pores",
+    "post_hair_removal"
+  ]
+}
